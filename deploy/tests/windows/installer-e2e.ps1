@@ -71,12 +71,12 @@ try {
   $envFile = Join-Path $dataRoot 'kadai.env'
   Assert-True (Test-Path -LiteralPath $envFile) 'install: kadai.env created'
   $cfg = Get-Content -LiteralPath $envFile -Raw
-  Assert-True ($cfg -match '(?m)^KADAI_MODE=onprem$') 'install: KADAI_MODE=onprem'
-  Assert-True ($cfg -match "(?m)^PORT=$Port$") "install: PORT=$Port"
+  Assert-True ($cfg -match '(?m)^KADAI_MODE=onprem\r?$') 'install: KADAI_MODE=onprem'
+  Assert-True ($cfg -match "(?m)^PORT=$Port\r?$") "install: PORT=$Port"
   Assert-True ($null -ne (Get-ScheduledTask -TaskName 'Kadai Backup' -ErrorAction SilentlyContinue)) 'install: backup task registered'
   Assert-True (Test-Path -LiteralPath (Join-Path $installDir 'unins000.exe')) 'install: uninstaller present'
   Assert-True (Test-Path -LiteralPath (Join-Path $installDir 'scripts\backup.ps1')) 'install: operator scripts copied'
-  $secret = (Select-String -LiteralPath $envFile -Pattern '^JWT_SECRET=(.+)$').Matches[0].Groups[1].Value
+  $secret = (Select-String -LiteralPath $envFile -Pattern '^JWT_SECRET=(.+?)\r?$').Matches[0].Groups[1].Value
 
   # 2. upgrade (same build: exercises backup, switch, rollback copy and health check)
   $code = Invoke-Setup 'upgrade' $silent
@@ -103,7 +103,7 @@ try {
   $code = Invoke-Setup 'reinstall' ($silent + @('/TASKS="desktopicon"'))
   Assert-True ($code -eq 0) 'reinstall: setup exit code 0'
   Assert-Healthy 'reinstall'
-  $secretAfter = (Select-String -LiteralPath $envFile -Pattern '^JWT_SECRET=(.+)$').Matches[0].Groups[1].Value
+  $secretAfter = (Select-String -LiteralPath $envFile -Pattern '^JWT_SECRET=(.+?)\r?$').Matches[0].Groups[1].Value
   Assert-True ($secret -eq $secretAfter) 'reinstall: existing configuration reused'
 
   Write-Step 'all installer checks passed'
