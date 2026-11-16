@@ -9,17 +9,17 @@ One build serves every deployment. `KADAI_MODE=cloud | onprem` selects the behav
 
 | Artefact (per release `vX.Y.Z`) | Used for |
 |---|---|
-| `ghcr.io/jayeskumar/my_shop:X.Y.Z` (linux/amd64 + arm64) | Kubernetes, cloud Compose, on-prem Docker |
+| `ghcr.io/jayeskumar/kadai:X.Y.Z` (linux/amd64 + arm64) | Kubernetes, cloud Compose, on-prem Docker |
 | `kadai-onprem-X.Y.Z.zip` | on-prem kit: Compose files, Linux installer, backup/restore/upgrade scripts, systemd units, Windows installer, these docs |
 | `kadai-server-X.Y.Z-linux-x64.tar.gz` / `-win-x64.zip` | native installs (no Docker) |
 | `kadai-image-X.Y.Z.spdx.json`, `SHA256SUMS` | SBOM and checksums (`sha256sum -c SHA256SUMS`) |
 
 The image also carries BuildKit provenance and SBOM attestations (`docker buildx imagetools
 inspect <image> --format '{{json .Provenance}}'`, `gh attestation verify oci://<image> -R
-Jayeskumar/my_shop`).
+Jayeskumar/kadai`).
 
 > **Registry access.** GHCR packages of a private repository are private. Before shipping to
-> shops, make the package public (GitHub → Packages → my_shop → Package settings → Change
+> shops, make the package public (GitHub → Packages → kadai → Package settings → Change
 > visibility) or give each installation a read-only token (`docker login ghcr.io`).
 
 ---

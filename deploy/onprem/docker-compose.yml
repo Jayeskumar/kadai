@@ -72,7 +72,7 @@ services:
     logging: *logging
 
   kadai:
-    image: ${KADAI_IMAGE:?set KADAI_IMAGE in .env, e.g. ghcr.io/jayeskumar/my_shop:1.0.0}
+    image: ${KADAI_IMAGE:?set KADAI_IMAGE in .env, e.g. ghcr.io/jayeskumar/kadai:1.0.0}
     restart: unless-stopped
     depends_on:
       db:

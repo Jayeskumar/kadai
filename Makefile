@@ -38,7 +38,7 @@ bundle: ## native server bundle for this machine (after pnpm build), into dist/r
 	.github/scripts/bundle.sh $(VERSION) $$(case "$$(uname -m)" in aarch64|arm64) echo linux-arm64;; *) echo linux-x64;; esac)
 
 onprem-kit: ## on-prem kit zip into dist/release
-	.github/scripts/onprem-kit.sh $(VERSION) ghcr.io/jayeskumar/my_shop https://github.com/Jayeskumar/my_shop/releases/download/v$(VERSION)
+	.github/scripts/onprem-kit.sh $(VERSION) ghcr.io/jayeskumar/kadai https://github.com/Jayeskumar/kadai/releases/download/v$(VERSION)
 
 k8s-render-staging: ## render the staging overlay
 	kubectl kustomize deploy/k8s/overlays/staging

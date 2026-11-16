@@ -2,7 +2,7 @@
 # @PLACEHOLDERS@. Configuration: @ENV_FILE@ (KADAI_MODE=onprem, database URLs, secrets).
 [Unit]
 Description=Kadai Server (கடை) - billing, stock, GST and UPI
-Documentation=https://github.com/Jayeskumar/my_shop/blob/main/docs/DEPLOYMENT.md
+Documentation=https://github.com/Jayeskumar/kadai/blob/main/docs/DEPLOYMENT.md
 After=network-online.target @PG_UNIT@
 Wants=network-online.target @PG_UNIT@
 

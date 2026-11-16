@@ -11,7 +11,7 @@
 #      the running version keeps serving)
 #   4. applies everything else and waits for the api and worker rollouts
 # Requires kubectl (with kustomize) and the Secret kadai-secrets in the target namespace.
-# KADAI_IMAGE_REPO overrides the image repository (default ghcr.io/jayeskumar/my_shop).
+# KADAI_IMAGE_REPO overrides the image repository (default ghcr.io/jayeskumar/kadai).
 # =============================================================================
 set -Eeuo pipefail
 
@@ -29,7 +29,7 @@ die() {
 [[ "$tag" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]] || die "invalid image tag '$tag'"
 command -v kubectl >/dev/null || die "kubectl is required"
 
-repo=${KADAI_IMAGE_REPO:-ghcr.io/jayeskumar/my_shop}
+repo=${KADAI_IMAGE_REPO:-ghcr.io/jayeskumar/kadai}
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
@@ -43,7 +43,7 @@ kind: Kustomization
 resources:
   - $overlay_rel
 images:
-  - name: ghcr.io/jayeskumar/my_shop
+  - name: ghcr.io/jayeskumar/kadai
     newName: $repo
     newTag: $tag
 EOF

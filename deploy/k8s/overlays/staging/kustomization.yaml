@@ -14,7 +14,7 @@ components:
 
 images:
   - name: kadai
-    newName: ghcr.io/jayeskumar/my_shop
+    newName: ghcr.io/jayeskumar/kadai
     newTag: main
 
 configMapGenerator:

@@ -84,7 +84,7 @@ ARG PG_MAJOR=16
 ARG KADAI_VERSION=0.0.0-dev
 ARG GIT_COMMIT=unknown
 ARG BUILD_DATE=unknown
-ARG SOURCE_URL=https://github.com/Jayeskumar/my_shop
+ARG SOURCE_URL=https://github.com/Jayeskumar/kadai
 
 LABEL org.opencontainers.image.title="Kadai" \
       org.opencontainers.image.description="Kadai (கடை) — retail ERP, POS, GST and UPI for Indian shops (cloud SaaS and on-premise)" \
