@@ -103,7 +103,9 @@ jobs:
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; if ($LASTEXITCODE -ne 0) { exit 1 } }
           if (-not (Test-Path $iscc)) { Write-Host "::error::ISCC.exe not found"; exit 1 }
-          & $iscc /? | Select-Object -First 1
+          # (ISCC /? exits with 1, so only report the version of the file.)
+          Write-Host "ISCC $((Get-Item $iscc).VersionInfo.ProductVersion) at $iscc"
+          exit 0
 
       - name: Build KadaiSetup-${{ steps.v.outputs.version }}-x64.exe
         shell: powershell
