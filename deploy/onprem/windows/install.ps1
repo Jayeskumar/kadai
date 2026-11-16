@@ -454,7 +454,7 @@ if ($Reinstall) {
   Test-BundleChecksum $bundle
   $new = Expand-Bundle $bundle
   $info = Get-BundleVersion $new
-  Confirm-Action "Reinstall Kadai $($info.version) with the existing configuration $EnvFile?"
+  Confirm-Action "Reinstall Kadai $($info.version) with the existing configuration $($EnvFile)?"
   if (Get-Service -Name $KadaiServiceName -ErrorAction SilentlyContinue) { Stop-Service -Name $KadaiServiceName -Force }
   if (Test-Path -LiteralPath $AppDir) { Remove-Item -LiteralPath $AppDir -Recurse -Force }
   Move-Item -LiteralPath $new -Destination $AppDir

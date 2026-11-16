@@ -107,6 +107,15 @@ try {
   Assert-True ($secret -eq $secretAfter) 'reinstall: existing configuration reused'
 
   Write-Step 'all installer checks passed'
+} catch {
+  # Show the end of the newest Kadai install log right in the CI output.
+  $last = Get-ChildItem -Path (Join-Path $dataRoot 'logs') -Filter 'install-*.log' -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTime | Select-Object -Last 1
+  if ($last) {
+    Write-Host "----- $($last.FullName) (last 40 lines) -----"
+    Get-Content -LiteralPath $last.FullName -Tail 40 | ForEach-Object { Write-Host $_ }
+  }
+  throw
 } finally {
   # Keep everything useful for diagnosis next to the setup logs.
   $logs = Join-Path $dataRoot 'logs'
