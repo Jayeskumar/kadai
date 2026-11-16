@@ -1,0 +1,144 @@
+# Windows installer: KadaiSetup-<version>-x64.exe, the one-click offline on-prem installer.
+#   1. native win-x64 server bundle (built and smoke-tested on Windows: native modules)
+#   2. offline dependencies (Node.js 22, PostgreSQL 16, WinSW), verified, + the Windows kit
+#   3. Inno Setup compile (code-signed when KADAI_SIGN_PFX_BASE64 / KADAI_SIGN_PFX_PASS are set)
+#   4. end to end on the runner: silent install -> upgrade -> uninstall -> reinstall
+# Runs on changes to the Windows kit, on demand (Actions -> Windows installer -> Run workflow)
+# and from release.yml for every version tag (asset of the GitHub release).
+name: Windows installer
+
+on:
+  push:
+    paths:
+      - deploy/onprem/windows/**
+      - deploy/tests/windows/**
+      - .github/workflows/windows-installer.yml
+      - .github/scripts/bundle.sh
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version stamped on the installer (default <package.json version>-ci.<run number>)
+        required: false
+        default: ''
+      e2e:
+        description: Run the install / upgrade / uninstall / reinstall test
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      artifact-name:
+        type: string
+        default: release-windows-installer
+    secrets:
+      KADAI_SIGN_PFX_BASE64:
+        required: false
+      KADAI_SIGN_PFX_PASS:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-installer-${{ github.ref }}-${{ inputs.version || 'ci' }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  installer:
+    name: KadaiSetup.exe (build · install · upgrade · uninstall · reinstall)
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Version
+        id: v
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          version=$INPUT_VERSION
+          if [ -z "$version" ]; then
+            version="$(node -p "require('./package.json').version")-ci.${RUN_NUMBER}"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::invalid version '$version'"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Installer version: $version"
+
+      - name: Windows PowerShell 5.1 can parse the kit and installer scripts
+        shell: powershell
+        run: |
+          $failed = $false
+          Get-ChildItem deploy/onprem/windows, deploy/tests/windows -Recurse -Filter *.ps1 | ForEach-Object {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            foreach ($e in $errors) { Write-Host "::error file=$($_.Name),line=$($e.Extent.StartLineNumber)::$($e.Message)"; $failed = $true }
+          }
+          if ($failed) { exit 1 }
+
+      - run: pnpm install --frozen-lockfile
+      - name: Build server and web app
+        run: |
+          pnpm --filter @kadai/server build
+          pnpm --filter @kadai/web build
+      - name: Assemble and smoke-test the win-x64 bundle
+        run: .github/scripts/bundle.sh "${{ steps.v.outputs.version }}" win-x64 dist/release
+
+      - name: Inno Setup 6
+        shell: powershell
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; if ($LASTEXITCODE -ne 0) { exit 1 } }
+          if (-not (Test-Path $iscc)) { Write-Host "::error::ISCC.exe not found"; exit 1 }
+          & $iscc /? | Select-Object -First 1
+
+      - name: Build KadaiSetup-${{ steps.v.outputs.version }}-x64.exe
+        shell: powershell
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+          KADAI_SIGN_PFX_BASE64: ${{ secrets.KADAI_SIGN_PFX_BASE64 }}
+          KADAI_SIGN_PFX_PASS: ${{ secrets.KADAI_SIGN_PFX_PASS }}
+        run: |
+          & deploy\onprem\windows\installer\build-installer.ps1 -Version $env:VERSION `
+            -Bundle "dist\release\kadai-server-$env:VERSION-win-x64.zip" -OutDir dist\installer
+          if (-not $?) { exit 1 }
+
+      - name: End to end (silent install, upgrade, uninstall, reinstall)
+        if: github.event_name != 'workflow_dispatch' || inputs.e2e
+        shell: powershell
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          & deploy\tests\windows\installer-e2e.ps1 -Setup "dist\installer\KadaiSetup-$env:VERSION-x64.exe" -LogDir dist\installer-e2e
+          if (-not $?) { exit 1 }
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name || format('KadaiSetup-{0}-x64', steps.v.outputs.version) }}
+          path: dist/installer/KadaiSetup-*.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload installer test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-e2e-logs-${{ github.run_attempt }}${{ inputs.artifact-name && '-release' || '' }}
+          path: dist/installer-e2e
+          if-no-files-found: ignore
+          retention-days: 14

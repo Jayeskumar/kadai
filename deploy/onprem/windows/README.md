@@ -5,7 +5,56 @@ installer sets up a private Node.js 22 runtime, PostgreSQL 16 and the Windows se
 **Kadai Server**. Counter PCs, phones and tablets on the shop network then open
 `http://<this-pc>:8080`.
 
-## Install
+## Install with KadaiSetup.exe (recommended for customers)
+
+Give the shop **`KadaiSetup-<version>-x64.exe`** (an asset of every GitHub release, built by
+`.github/workflows/windows-installer.yml`). It is a single, offline file (about 400 MB) that
+carries the Kadai server, Node.js 22, PostgreSQL 16 and WinSW, so no internet connection is
+needed.
+
+1. Double-click `KadaiSetup-<version>-x64.exe` (Windows asks for administrator rights).
+2. Choose the options (shop-network access, daily backup, desktop shortcut) and the port
+   (8080).
+3. Setup installs everything and waits until Kadai answers. Then **Open Kadai now** shows the
+   setup wizard: shop name, GSTIN, owner login. Upload the licence in Settings → System.
+
+The same `.exe` also **upgrades** an existing installation (pre-upgrade backup, switch, health
+check, previous version kept for `install.ps1 -Rollback`) and **reinstalls** after an uninstall
+(it reuses `C:\ProgramData\Kadai\kadai.env` and the database). **Uninstall** from Settings →
+Apps → Kadai Server: the service, firewall rule, shortcuts and program files go; data, backups
+and the PostgreSQL database are kept.
+
+Silent install for IT staff:
+
+```powershell
+KadaiSetup-<version>-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG=C:\kadai-setup.log `
+  /PORT=8080 /TASKS="network,backup,desktopicon"     # /PGPASSWORD=... if PostgreSQL 16 already exists
+```
+
+Exit code 0 means installed and healthy; 7 means the installation failed (details in
+`C:\ProgramData\Kadai\logs\install-*.log`).
+
+**Building the .exe** (Windows, from the repository root, after `pnpm build` and
+`.github/scripts/bundle.sh <version> win-x64`; needs Inno Setup 6):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\onprem\windows\installer\build-installer.ps1 `
+  -Version 1.4.0 -Bundle dist\release\kadai-server-1.4.0-win-x64.zip
+```
+
+It downloads and verifies the offline dependencies (Node.js SHA-256, PostgreSQL Authenticode,
+WinSW pinned SHA-256) and writes `dist\release\KadaiSetup-1.4.0-x64.exe`. **Sign it before
+shipping**: with a code-signing certificate in `KADAI_SIGN_PFX_BASE64` / `KADAI_SIGN_PFX_PASS`
+(environment, or repository secrets for the workflow) setup and uninstaller are signed;
+unsigned, Windows SmartScreen warns the customer. `deploy/tests/windows/installer-e2e.ps1`
+tests install → upgrade → uninstall → reinstall on a throw-away Windows machine (CI does this
+on every build).
+
+Files: `installer/kadai-setup.iss` (Inno Setup script), `installer/run-install.ps1`
+(unattended wrapper around `install.ps1` with log and exit code), `installer/README.txt`
+(guide installed for the shop).
+
+## Install with PowerShell (manual / scripted)
 
 1. Unpack `kadai-onprem-<version>.zip` (for example to `C:\KadaiSetup`). Put
    `kadai-server-<version>-win-x64.zip` and `SHA256SUMS` from the same release next to it (the
@@ -55,6 +104,7 @@ already installed, the installer asks for its `postgres` password (or pass
 | Restore               | `.\restore.ps1 -File C:\ProgramData\Kadai\data\backups\<file>.dump`                |
 | Upgrade               | `.\install.ps1 -Upgrade -BundlePath <path>\kadai-server-<new version>-win-x64.zip` |
 | Undo the last upgrade | `.\install.ps1 -Rollback`                                                          |
+| Reinstall (keep data) | `.\install.ps1 -Reinstall -BundlePath <path>\kadai-server-<version>-win-x64.zip`   |
 | Remove (keeps data)   | `.\install.ps1 -Uninstall`                                                         |
 
 Backups: Kadai makes its own daily backup; `-BackupTask` adds a second one. Put

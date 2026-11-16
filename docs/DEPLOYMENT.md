@@ -11,6 +11,7 @@ One build serves every deployment. `KADAI_MODE=cloud | onprem` selects the behav
 |---|---|
 | `ghcr.io/jayeskumar/kadai:X.Y.Z` (linux/amd64 + arm64) | Kubernetes, cloud Compose, on-prem Docker |
 | `kadai-onprem-X.Y.Z.zip` | on-prem kit: Compose files, Linux installer, backup/restore/upgrade scripts, systemd units, Windows installer, these docs |
+| `KadaiSetup-X.Y.Z-x64.exe` | **Windows shop PC: one-click offline installer** (Kadai, Node.js 22, PostgreSQL 16, service); also upgrades and reinstalls. See [deploy/onprem/windows/README.md](../deploy/onprem/windows/README.md) |
 | `kadai-server-X.Y.Z-linux-x64.tar.gz` / `-win-x64.zip` | native installs (no Docker) |
 | `kadai-image-X.Y.Z.spdx.json`, `SHA256SUMS` | SBOM and checksums (`sha256sum -c SHA256SUMS`) |
 

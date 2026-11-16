@@ -5,7 +5,9 @@
 #   3. native server bundles (linux-x64 tar.gz, win-x64 zip), built and smoke-tested on
 #      their own platform
 #   4. on-prem kit zip (compose, installers, backup/restore/upgrade, docs) stamped with the image
-#   5. GitHub release with every asset + SHA256SUMS (pre-release for -rc/-beta tags)
+#   5. Windows installer KadaiSetup-<version>-x64.exe (windows-installer.yml: offline, one click,
+#      tested install -> upgrade -> uninstall -> reinstall on a Windows runner)
+#   6. GitHub release with every asset + SHA256SUMS (pre-release for -rc/-beta tags)
 name: Release
 
 on:
@@ -187,9 +189,20 @@ jobs:
           path: dist/release/*
           if-no-files-found: error
 
+  windows-installer:
+    name: Windows installer
+    needs: [meta, ci]
+    uses: ./.github/workflows/windows-installer.yml
+    with:
+      version: ${{ needs.meta.outputs.version }}
+      artifact-name: release-windows-installer
+    secrets:
+      KADAI_SIGN_PFX_BASE64: ${{ secrets.KADAI_SIGN_PFX_BASE64 }}
+      KADAI_SIGN_PFX_PASS: ${{ secrets.KADAI_SIGN_PFX_PASS }}
+
   publish:
     name: GitHub release
-    needs: [meta, image, bundles, onprem-kit]
+    needs: [meta, image, bundles, onprem-kit, windows-installer]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -215,7 +228,7 @@ jobs:
           IMAGE: ${{ needs.meta.outputs.image }}
         run: |
           # shellcheck disable=SC2016 # the backticks are Markdown, not command substitution
-          notes=$(printf 'Container image: `%s:%s`\n\nOn-prem: download `kadai-onprem-%s.zip` (Linux/Windows installers, Docker Compose, backup/restore/upgrade).\nUpgrade guide: docs/DEPLOYMENT.md#upgrades. Verify downloads with `sha256sum -c SHA256SUMS`.\n' "$IMAGE" "$VERSION" "$VERSION")
+          notes=$(printf 'Container image: `%s:%s`\n\nWindows shop PC: download `KadaiSetup-%s-x64.exe` and double-click it (offline, installs PostgreSQL 16 and the Kadai Server service).\nOther on-prem installs: `kadai-onprem-%s.zip` (Linux installer, Docker Compose, backup/restore/upgrade).\nUpgrade guide: docs/DEPLOYMENT.md#upgrades. Verify downloads with `sha256sum -c SHA256SUMS`.\n' "$IMAGE" "$VERSION" "$VERSION" "$VERSION")
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" assets/* --clobber
           else

@@ -257,7 +257,7 @@ jobs:
         shell: powershell
         run: |
           $failed = $false
-          Get-ChildItem deploy/onprem/windows -Filter *.ps1 | ForEach-Object {
+          Get-ChildItem deploy/onprem/windows -Recurse -Filter *.ps1 | ForEach-Object {
             $tokens = $null; $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
             foreach ($e in $errors) { Write-Host "::error file=$($_.Name),line=$($e.Extent.StartLineNumber)::$($e.Message)"; $failed = $true }

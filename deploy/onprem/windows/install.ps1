@@ -13,6 +13,8 @@
 
   Upgrade:   .\install.ps1 -Upgrade -BundlePath .\kadai-server-1.4.0-win-x64.zip
   Rollback:  .\install.ps1 -Rollback          (previous version + its pre-upgrade backup)
+  Reinstall: .\install.ps1 -Reinstall -BundlePath <zip>   (after -Uninstall or on a repaired PC:
+             reuses kadai.env, the database and the data folder; PostgreSQL must be installed)
   Remove:    .\install.ps1 -Uninstall         (keeps PostgreSQL, the database and the data folder)
   Offline:   pass -NodeZip, -PostgresInstaller and -WinSWExe with local copies of the downloads.
 
@@ -37,6 +39,7 @@ param(
   [switch]$NoShortcut,
   [switch]$BackupTask,
   [switch]$Upgrade,
+  [switch]$Reinstall,
   [switch]$Rollback,
   [switch]$Uninstall,
   [switch]$Yes
@@ -438,8 +441,44 @@ if ($Upgrade) {
   Stop-WithError "the new version is not healthy: see $(Join-Path $DataRoot 'logs'), or run .\install.ps1 -Rollback"
 }
 
+if ($Reinstall) {
+  # The application files and the service are gone (or broken) but kadai.env, the database
+  # and the data folder are still here: put the application back and register the service
+  # again with the existing configuration (its secrets match the database roles).
+  $cfg = Get-KadaiConfig $DataRoot
+  if (-not (Get-Service -Name $PgServiceName -ErrorAction SilentlyContinue)) {
+    Stop-WithError "PostgreSQL $PgMajor ($PgServiceName) is not installed: restore it first (docs/RUNBOOK.md), then run -Reinstall again"
+  }
+  if ($cfg.ContainsKey('PORT')) { $Port = [int]$cfg['PORT'] }
+  $bundle = Resolve-Bundle
+  Test-BundleChecksum $bundle
+  $new = Expand-Bundle $bundle
+  $info = Get-BundleVersion $new
+  Confirm-Action "Reinstall Kadai $($info.version) with the existing configuration $EnvFile?"
+  if (Get-Service -Name $KadaiServiceName -ErrorAction SilentlyContinue) { Stop-Service -Name $KadaiServiceName -Force }
+  if (Test-Path -LiteralPath $AppDir) { Remove-Item -LiteralPath $AppDir -Recurse -Force }
+  Move-Item -LiteralPath $new -Destination $AppDir
+  Write-Step "Kadai $($info.version) unpacked into $AppDir"
+  $nodeExe = Install-NodeRuntime ([int]$info.node_major)
+  Start-Service -Name $PgServiceName
+  Set-EnvValue $EnvFile 'KADAI_VERSION' ([string]$info.version)
+  Set-EnvValue $EnvFile 'KADAI_WEB_DIST' (Join-Path $AppDir 'web')
+  Set-EnvValue $EnvFile 'KADAI_MIGRATIONS_DIR' (Join-Path $AppDir 'migrations')
+  Set-FolderPermission
+  Copy-KadaiScript
+  Install-KadaiService $nodeExe
+  Start-Service -Name $KadaiServiceName
+  Set-Firewall
+  New-DesktopShortcut
+  Register-BackupTask
+  if (-not (Wait-KadaiReady $cfg 900)) { Stop-WithError "Kadai did not start: see $(Join-Path $DataRoot 'logs')" }
+  $url = if ($cfg.ContainsKey('PUBLIC_BASE_URL')) { $cfg['PUBLIC_BASE_URL'] } else { "http://$($env:COMPUTERNAME.ToLowerInvariant()):$Port" }
+  Show-Summary $url
+  return
+}
+
 # --- fresh install ------------------------------------------------------------------------
-if (Test-Path -LiteralPath $EnvFile) { Stop-WithError "Kadai is already installed ($EnvFile): use -Upgrade" }
+if (Test-Path -LiteralPath $EnvFile) { Stop-WithError "Kadai is already installed ($EnvFile): use -Upgrade (or -Reinstall if the application was removed)" }
 $bundle = Resolve-Bundle
 Test-BundleChecksum $bundle
 New-Item -ItemType Directory -Force -Path $DataRoot, $InstallDir | Out-Null

@@ -11,7 +11,9 @@ dynamic QR with automatic confirmation), stock with batches and expiry, purchase
 with reminders, double-entry accounting and GST returns, with a Tamil-first bilingual UI and
 bilingual invoices. **One codebase ships two ways**: a multi-tenant **cloud SaaS** and a
 single-tenant **on-premise server** that runs on the shop's own PC or LAN
-(`KADAI_MODE=cloud | onprem`). Plans and the on-prem licence are described in
+(`KADAI_MODE=cloud | onprem`). For a Windows shop PC every release ships
+**`KadaiSetup-<version>-x64.exe`**, a one-click offline installer (Kadai, Node.js, PostgreSQL 16
+and the Windows service; see [deploy/onprem/windows/README.md](deploy/onprem/windows/README.md)). Plans and the on-prem licence are described in
 [docs/PRODUCT.md](docs/PRODUCT.md).
 
 **Status.** The foundation is in place and tested end to end: the shared GST/pricing/money engine,
@@ -141,7 +143,7 @@ optional.
 │  ├─ docker/            multi-stage Dockerfile, entrypoint, healthcheck
 │  ├─ cloud/             docker compose + Caddy for a small cloud install
 │  ├─ k8s/               kustomize base, monitoring component, staging/production overlays
-│  ├─ onprem/            compose kit, Linux installer, backup/restore/upgrade, systemd, Windows
+│  ├─ onprem/            compose kit, Linux installer, backup/restore/upgrade, systemd, Windows (+ KadaiSetup.exe)
 │  └─ tests/             static validation and end-to-end kit tests
 ├─ docs/                 architecture, API, product, deployment, runbook
 └─ .github/              CI (lint, tests, build, e2e, image, deploy kit) and release workflows
