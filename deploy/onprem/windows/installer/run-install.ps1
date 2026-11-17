@@ -22,6 +22,7 @@ param(
   [Parameter(Mandatory = $true)][string]$LogFile,
   [Parameter(Mandatory = $true)][string]$ExitCodeFile,
   [string]$StartedFile,
+  [string]$ProgressFile,
   [string]$SummaryFile,
   [ValidateSet('Install', 'Upgrade', 'Reinstall')][string]$Mode = 'Install',
   [Parameter(Mandatory = $true)][string]$InstallDir,
@@ -67,6 +68,12 @@ $code = 1
 $transcript = $false
 # Tells KadaiSetup.exe that PowerShell runs this script (it gives up quickly otherwise).
 if ($StartedFile) { [IO.File]::WriteAllText($StartedFile, [string]$PID) }
+# Progress lines for the wizard (kadai-common.ps1 Write-Step appends to it).
+if ($ProgressFile) { $env:KADAI_PROGRESS_FILE = $ProgressFile }
+function Write-SetupLine([string]$Line) {
+  Write-Host $Line
+  if ($ProgressFile) { try { [IO.File]::AppendAllText($ProgressFile, "$Line`r`n") } catch { Write-Verbose $_.Exception.Message } }
+}
 try {
   $logDir = Split-Path -Parent $LogFile
   if ($logDir) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
@@ -76,7 +83,7 @@ try {
   } catch {
     Write-Warning "no transcript: $($_.Exception.Message)"
   }
-  Write-Host "[kadai] KadaiSetup: mode $Mode, install folder $InstallDir"
+  Write-SetupLine "[kadai] KadaiSetup: mode $Mode, install folder $InstallDir"
 
   $arguments = @{
     Yes        = $true
@@ -120,7 +127,7 @@ try {
   # last such line to the user.
   $message = $_.Exception.Message
   if ($message -notmatch '^\[kadai\] ERROR:') { $message = "[kadai] ERROR: $message" }
-  Write-Host $message
+  Write-SetupLine $message
   Write-Host $_.ScriptStackTrace
 } finally {
   if ($PgSecretFile -and (Test-Path -LiteralPath $PgSecretFile)) { Remove-Item -LiteralPath $PgSecretFile -Force -ErrorAction SilentlyContinue }

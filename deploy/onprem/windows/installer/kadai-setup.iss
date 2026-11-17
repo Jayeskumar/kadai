@@ -138,8 +138,8 @@ Name: "{autoprograms}\Kadai\{cm:IconUninstall}"; Filename: "{uninstallexe}"
 
 [Run]
 ; runasoriginaluser: Setup is elevated, the browser must not be.
-Filename: "{code:EdgeExe}"; Parameters: "--app=http://localhost:{code:GetPort}/"; Description: "{cm:RunOpen}"; Flags: postinstall nowait skipifsilent runasoriginaluser; Check: HasEdge
-Filename: "http://localhost:{code:GetPort}/"; Description: "{cm:RunOpen}"; Flags: shellexec postinstall nowait skipifsilent runasoriginaluser; Check: not HasEdge
+Filename: "{code:EdgeExe}"; Parameters: "--app={code:OpenUrl}"; Description: "{cm:RunOpen}"; Flags: postinstall nowait skipifsilent runasoriginaluser; Check: HasEdge
+Filename: "{code:OpenUrl}"; Description: "{cm:RunOpen}"; Flags: shellexec postinstall nowait skipifsilent runasoriginaluser; Check: not HasEdge
 
 [UninstallRun]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\scripts\install.ps1"" -Uninstall -Yes -InstallDir ""{app}"""; Flags: runhidden waituntilterminated; RunOnceId: "KadaiUninstall"; StatusMsg: "{cm:UninstallStatus}"
@@ -175,6 +175,7 @@ var
   PgPage: TInputQueryWizardPage;
   ProgressPage: TOutputProgressWizardPage;
   InstallLog: String;
+  ProgressFile: String;
   LanUrls: TArrayOfString;
 
 { ---------------------------------------------------------------------------------------- }
@@ -254,6 +255,13 @@ begin
     Result := ReadEnvValue('PORT');
     if Result = '' then Result := '8080';
   end;
+end;
+
+{ Where "Open Kadai" goes: the first-run setup wizard on a new installation. }
+function OpenUrl(Param: String): String;
+begin
+  Result := 'http://localhost:' + GetPort('') + '/';
+  if Mode = 'Install' then Result := Result + 'setup';
 end;
 
 function EdgeExe(Param: String): String;
@@ -623,14 +631,15 @@ begin
   end;
 end;
 
-{ Highest step reached so far and the latest raw line, from the install log. }
-procedure ReadProgress(var Step: Integer; var LastLine: String; var LastError: String);
+{ Highest step reached so far and the latest raw line, from the progress file (the
+  transcript is locked while PowerShell writes it; it is only read after the run). }
+procedure ReadProgress(FileName: String; var Step: Integer; var LastLine: String; var LastError: String);
 var
   Lines: TArrayOfString;
   I, S: Integer;
   L: String;
 begin
-  if not LoadStringsFromFile(InstallLog, Lines) then Exit;
+  if not LoadStringsFromFile(FileName, Lines) then Exit;
   for I := 0 to GetArrayLength(Lines) - 1 do
   begin
     L := Trim(Lines[I]);
@@ -715,6 +724,7 @@ begin
     DepsDir := ExpandConstant('{tmp}\deps');
     ExitFile := ExpandConstant('{tmp}\kadai-exit-code.txt');
     StartedFile := ExpandConstant('{tmp}\kadai-started.txt');
+    ProgressFile := ExpandConstant('{tmp}\kadai-progress.txt');
     SummaryFile := ExpandConstant('{tmp}\kadai-summary.txt');
     Log('Kadai install log: ' + InstallLog);
 
@@ -722,6 +732,7 @@ begin
       ' -LogFile ' + Quote(InstallLog) +
       ' -ExitCodeFile ' + Quote(ExitFile) +
       ' -StartedFile ' + Quote(StartedFile) +
+      ' -ProgressFile ' + Quote(ProgressFile) +
       ' -SummaryFile ' + Quote(SummaryFile) +
       ' -InstallDir ' + Quote(ExpandConstant('{app}')) +
       ' -BundlePath ' + Quote(DepsDir + '\{#BundleName}') +
@@ -771,7 +782,7 @@ begin
       Ticks := Ticks + 1;
       if not WizardSilent() then
       begin
-        ReadProgress(Step, LastLine, LastError);
+        ReadProgress(ProgressFile, Step, LastLine, LastError);
         if Step <> PrevStep then
         begin
           PrevStep := Step;
@@ -809,7 +820,8 @@ begin
     if Trim(ExitText) <> '0' then
     begin
       Step := 0;
-      ReadProgress(Step, LastLine, LastError);
+      ReadProgress(ProgressFile, Step, LastLine, LastError);
+      if LastError = '' then ReadProgress(InstallLog, Step, LastLine, LastError);
       if LastError = '' then LastError := LastLine;
       Result := FailWith(LastError);
       Exit;
@@ -848,6 +860,8 @@ begin
     Text := Text + #13#10#13#10 + FmtMessage(CustomMessage('FinishKeepEnv'), [EnvFilePath()]);
     WizardForm.FinishedLabel.Caption := Text;
     WizardForm.FinishedLabel.AdjustHeight();
+    // The "Open Kadai now" box sits under the default label; keep it below the longer text.
+    WizardForm.RunList.Top := WizardForm.FinishedLabel.Top + WizardForm.FinishedLabel.Height + ScaleY(10);
   end;
 end;
 

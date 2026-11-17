@@ -15,8 +15,14 @@ $script:KadaiDbAppUser = 'kadai_app'
 # C:\ProgramData\Kadai on Windows (the variable is absent elsewhere, e.g. pwsh tests on Linux).
 $script:DefaultDataRoot = if ($env:ProgramData) { Join-Path $env:ProgramData 'Kadai' } else { $null }
 
-function Write-Step([string]$Message) { Write-Host "[kadai] $Message" -ForegroundColor Green }
-function Write-Warn([string]$Message) { Write-Host "[kadai] WARNING: $Message" -ForegroundColor Yellow }
+# KadaiSetup.exe shows these lines as progress. It cannot read the transcript while PowerShell
+# holds it open, so they also go to KADAI_PROGRESS_FILE (opened and closed for every line).
+function Add-ProgressLine([string]$Line) {
+  if (-not $env:KADAI_PROGRESS_FILE) { return }
+  try { [IO.File]::AppendAllText($env:KADAI_PROGRESS_FILE, "$Line`r`n", (New-Object Text.UTF8Encoding($false))) } catch { Write-Verbose "progress file: $($_.Exception.Message)" }
+}
+function Write-Step([string]$Message) { Write-Host "[kadai] $Message" -ForegroundColor Green; Add-ProgressLine "[kadai] $Message" }
+function Write-Warn([string]$Message) { Write-Host "[kadai] WARNING: $Message" -ForegroundColor Yellow; Add-ProgressLine "[kadai] WARNING: $Message" }
 function Stop-WithError([string]$Message) { throw "[kadai] ERROR: $Message" }
 
 function Assert-Administrator {
