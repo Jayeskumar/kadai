@@ -32,6 +32,9 @@ on:
       artifact-name:
         type: string
         default: release-windows-installer
+      e2e:
+        type: boolean
+        default: true
     secrets:
       KADAI_SIGN_PFX_BASE64:
         required: false
@@ -126,7 +129,9 @@ jobs:
           if (-not $?) { exit 1 }
 
       - name: End to end (silent install, upgrade, uninstall, reinstall)
-        if: github.event_name != 'workflow_dispatch' || inputs.e2e
+        # Always on push; on demand and from release.yml per the e2e input (default on). A called
+        # workflow sees the caller's event name, so the input decides, not github.event_name.
+        if: inputs.e2e != false
         shell: powershell
         env:
           VERSION: ${{ steps.v.outputs.version }}
