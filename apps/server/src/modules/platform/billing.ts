@@ -30,6 +30,7 @@ import {
   invoiceTotals,
   priceWithGst,
 } from '@kadai/shared/api/licensing'
+import type { platformRoutes } from '@kadai/shared/api/platform'
 import {
   type BillingInvoice,
   type BillingOverview,
@@ -41,7 +42,6 @@ import {
   RECOMMENDED_CLOUD_PLAN,
   cloudPlanProductCode,
   daysLeft,
-  platformRoutes,
   usageMeter,
   yearlySavings,
 } from '@kadai/shared/api/platform'
@@ -132,7 +132,8 @@ export function billingPlanDto(plan: CloudPlan, currentPlanCode: string): Billin
 
 export function offerPublicDto(o: OfferRecord): OfferPublic {
   const banner = o.banner == null ? null : OfferBannerSchema.safeParse(o.banner)
-  const endsAt = o.ends_at == null ? null : o.ends_at instanceof Date ? o.ends_at.toISOString() : o.ends_at
+  const endsAt =
+    o.ends_at == null ? null : o.ends_at instanceof Date ? o.ends_at.toISOString() : o.ends_at
   return {
     id: o.id,
     code: o.code,
@@ -153,10 +154,15 @@ export function offerPublicDto(o: OfferRecord): OfferPublic {
 function requirePlan(plans: readonly CloudPlan[], code: string, cycle: BillingCycle): CloudPlan {
   const plan = plans.find((p) => p.code === code)
   if (!plan || !isPurchasable(plan) || plan.prices[cycle] === null) {
-    throw reasonError('UNPROCESSABLE', 'plan_not_purchasable', `Plan "${code}" cannot be bought ${cycle} online`, {
-      plan_code: code,
-      cycle,
-    })
+    throw reasonError(
+      'UNPROCESSABLE',
+      'plan_not_purchasable',
+      `Plan "${code}" cannot be bought ${cycle} online`,
+      {
+        plan_code: code,
+        cycle,
+      },
+    )
   }
   return plan
 }
@@ -171,7 +177,11 @@ interface PricingContext {
   offers: OfferRecord[]
 }
 
-async function pricingContext(rt: PlatformRuntime, tenantId: string, now: Date): Promise<PricingContext> {
+async function pricingContext(
+  rt: PlatformRuntime,
+  tenantId: string,
+  now: Date,
+): Promise<PricingContext> {
   // systemDb: price book, vendor offers and the tenant's vendor-side history (system-only tables).
   const db = rt.deps.db.systemDb
   const [plans, buyer, offers] = await Promise.all([
@@ -313,7 +323,14 @@ interface NewOrder {
   lines: PricedOrderLine[]
   quote: Pick<
     PriceQuote,
-    'subtotal_paise' | 'discount_paise' | 'taxable_paise' | 'cgst_paise' | 'sgst_paise' | 'igst_paise' | 'total_paise' | 'offer_ids'
+    | 'subtotal_paise'
+    | 'discount_paise'
+    | 'taxable_paise'
+    | 'cgst_paise'
+    | 'sgst_paise'
+    | 'igst_paise'
+    | 'total_paise'
+    | 'offer_ids'
   >
   coupon_code: string | null
   created_by: string | null
@@ -370,7 +387,9 @@ async function cancelDraftOrder(rt: PlatformRuntime, orderId: string, why: strin
     .where('id', '=', orderId)
     .where('status', '=', 'draft')
     .execute()
-    .catch((err: unknown) => rt.deps.logger.warn({ err, order_id: orderId }, 'could not cancel draft order'))
+    .catch((err: unknown) =>
+      rt.deps.logger.warn({ err, order_id: orderId }, 'could not cancel draft order'),
+    )
 }
 
 function couponApplied(quote: PriceQuote): string | null {
@@ -465,7 +484,8 @@ async function listInvoices(
     .where('o.kind', '=', 'cloud_plan')
     .where('o.number', 'is not', null)
     .where('o.status', 'in', ['paid', 'fulfilled', 'refunded'])
-  if (bounds) orders = orders.where('o.paid_at', '>=', bounds.start).where('o.paid_at', '<', bounds.end)
+  if (bounds)
+    orders = orders.where('o.paid_at', '>=', bounds.start).where('o.paid_at', '<', bounds.end)
   let legacy = db
     .selectFrom('platform_invoices')
     .select([
@@ -485,7 +505,8 @@ async function listInvoices(
     ])
     .where('tenant_id', '=', tenantId)
     .where('status', '<>', 'draft')
-  if (bounds) legacy = legacy.where('created_at', '>=', bounds.start).where('created_at', '<', bounds.end)
+  if (bounds)
+    legacy = legacy.where('created_at', '>=', bounds.start).where('created_at', '<', bounds.end)
   const [orderRows, legacyRows] = await Promise.all([orders.execute(), legacy.execute()])
   const out: BillingInvoice[] = []
   for (const o of orderRows) {
@@ -687,7 +708,11 @@ async function invoicePrint(
     amount_in_words_en: totals.amount_in_words_en,
     amount_in_words_ta: totals.amount_in_words_ta,
     payment: legacy.paid_at
-      ? { provider: 'razorpay', reference: legacy.provider_payment_id, paid_at: iso(legacy.paid_at) }
+      ? {
+          provider: 'razorpay',
+          reference: legacy.provider_payment_id,
+          paid_at: iso(legacy.paid_at),
+        }
       : null,
     status: legacy.status === 'paid' ? 'paid' : legacy.status === 'void' ? 'void' : 'issued',
     notes: null,
@@ -701,12 +726,21 @@ async function invoicePrint(
 async function lockTenantCheckout(tx: Tx, tenantId: string): Promise<void> {
   // Serialises checkouts of one tenant (no row locks: fulfilment of a ₹0 order runs in a system
   // transaction that updates the subscription row).
-  await sql`select pg_advisory_xact_lock(hashtextextended(${`kadai_checkout:${tenantId}`}, 0))`.execute(tx)
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`kadai_checkout:${tenantId}`}, 0))`.execute(
+    tx,
+  )
 }
 
 async function reusablePaymentLink(
   tx: Tx,
-  input: { tenant_id: string; plan_code: string; cycle: BillingCycle; coupon_code: string | null; total_paise: number; now: Date },
+  input: {
+    tenant_id: string
+    plan_code: string
+    cycle: BillingCycle
+    coupon_code: string | null
+    total_paise: number
+    now: Date
+  },
 ): Promise<CheckoutResponse | null> {
   let q = tx
     .selectFrom('platform_checkouts')
@@ -718,7 +752,10 @@ async function reusablePaymentLink(
     .where('billing_cycle', '=', input.cycle)
     .where('total_paise', '=', input.total_paise)
     .where('expires_at', '>', new Date(input.now.getTime() + MIN_START_AT_LEAD_MS))
-  q = input.coupon_code === null ? q.where('coupon_code', 'is', null) : q.where('coupon_code', '=', input.coupon_code)
+  q =
+    input.coupon_code === null
+      ? q.where('coupon_code', 'is', null)
+      : q.where('coupon_code', '=', input.coupon_code)
   const row = await q.orderBy('created_at', 'desc').limit(1).executeTakeFirst()
   if (!row || !row.order_id) return null
   return {
@@ -820,11 +857,20 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
           const sub = await loadCurrentSubscription(tx, tenantId)
           const usage = []
           for (const metric of LIMIT_METRICS) {
-            usage.push(usageMeter(metric, await countForLimit(tx, req.ctx, metric), ent.limits[metric]))
+            usage.push(
+              usageMeter(metric, await countForLimit(tx, req.ctx, metric), ent.limits[metric]),
+            )
           }
           const pending = await tx
             .selectFrom('platform_checkouts')
-            .select(['order_id', 'short_url', 'total_paise', 'plan_code', 'billing_cycle', 'expires_at'])
+            .select([
+              'order_id',
+              'short_url',
+              'total_paise',
+              'plan_code',
+              'billing_cycle',
+              'expires_at',
+            ])
             .where('tenant_id', '=', tenantId)
             .where('status', '=', 'pending')
             .where('order_id', 'is not', null)
@@ -835,12 +881,16 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
           return { sub, usage, pending }
         })
         const ctx = await pricingContext(rt, tenantId, now)
-        const plan = ctx.plans.find((p) => p.code === ent.plan_code) ?? ctx.plans.find((p) => p.code === 'free')
+        const plan =
+          ctx.plans.find((p) => p.code === ent.plan_code) ??
+          ctx.plans.find((p) => p.code === 'free')
         if (!plan) throw new AppError('INTERNAL', `Plan "${ent.plan_code}" is missing`)
         const planNames = sub ? (ctx.plans.find((p) => p.code === sub.plan_code) ?? null) : null
         const live = sub && ['trialing', 'active', 'past_due'].includes(sub.status)
         const trialActive =
-          sub?.status === 'trialing' && sub.trial_ends_at !== null && sub.trial_ends_at.getTime() > now.getTime()
+          sub?.status === 'trialing' &&
+          sub.trial_ends_at !== null &&
+          sub.trial_ends_at.getTime() > now.getTime()
         const overview: BillingOverview = {
           plan: billingPlanDto(plan, ent.plan_code),
           subscription: sub ? subscriptionView(sub, planNames, now) : null,
@@ -864,7 +914,10 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
                 }
               : null,
           can_cancel: Boolean(
-            live && sub && (sub.status === 'active' || sub.status === 'past_due') && !sub.cancel_at_period_end,
+            live &&
+            sub &&
+            (sub.status === 'active' || sub.status === 'past_due') &&
+            !sub.cancel_at_period_end,
           ),
           tenant_state_code: ctx.buyer.place_of_supply,
           vendor_state_code: rt.settings.vendor.state_code,
@@ -900,7 +953,9 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
           quote,
           period_start: start,
           period_end: addDays(addMonths(start, months), -1),
-          first_charge_on: monthly ? autoRenewSchedule(quote, live, plan.code, now).first_charge_on : null,
+          first_charge_on: monthly
+            ? autoRenewSchedule(quote, live, plan.code, now).first_charge_on
+            : null,
           auto_renew_available: autoRenewAvailable,
         }
         return { data: result }
@@ -957,12 +1012,21 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
         if (!body.auto_renew) {
           // ---- prepaid: payment link ---------------------------------------------------------
           if (quote.total_paise > 0 && quote.total_paise < 100)
-            throw reasonError('UNPROCESSABLE', 'amount_too_small', 'Amount is below the online payment minimum')
+            throw reasonError(
+              'UNPROCESSABLE',
+              'amount_too_small',
+              'Amount is below the online payment minimum',
+            )
           if (quote.total_paise > 0) {
             if (!rt.razorpay.configured)
-              throw reasonError('PROVIDER_ERROR', 'billing_not_configured', 'Razorpay platform billing is not configured', {
-                provider: 'razorpay_platform',
-              })
+              throw reasonError(
+                'PROVIDER_ERROR',
+                'billing_not_configured',
+                'Razorpay platform billing is not configured',
+                {
+                  provider: 'razorpay_platform',
+                },
+              )
             const reuse = await reusablePaymentLink(tx, {
               tenant_id: tenantId,
               plan_code: plan.code,
@@ -1043,7 +1107,12 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
               reference_id: orderId,
               description: `Kadai ${plan.name} — ${body.cycle === 'yearly' ? 'yearly' : 'monthly'} plan`,
               customer: { name: ctx.buyer.name, contact: ctx.buyer.phone, email: ctx.buyer.email },
-              notes: notesFor({ tenant_id: tenantId, plan_code: plan.code, cycle: body.cycle, order_id: orderId }),
+              notes: notesFor({
+                tenant_id: tenantId,
+                plan_code: plan.code,
+                cycle: body.cycle,
+                order_id: orderId,
+              }),
               callback_url: billingPageUrl(rt, `checkout=${orderId}`),
               expire_by: expireBy,
               notify_sms: true,
@@ -1087,16 +1156,30 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
         // ---- monthly auto-renew: Razorpay subscription ---------------------------------------
         const planId = razorpayPlanId(rt.settings, plan.code)
         if (!planId)
-          throw reasonError('UNPROCESSABLE', 'auto_renew_unavailable', 'Automatic monthly renewal is not configured for this plan', {
-            plan_code: plan.code,
-          })
+          throw reasonError(
+            'UNPROCESSABLE',
+            'auto_renew_unavailable',
+            'Automatic monthly renewal is not configured for this plan',
+            {
+              plan_code: plan.code,
+            },
+          )
         if (!rt.razorpay.configured)
-          throw reasonError('PROVIDER_ERROR', 'billing_not_configured', 'Razorpay platform billing is not configured', {
-            provider: 'razorpay_platform',
-          })
+          throw reasonError(
+            'PROVIDER_ERROR',
+            'billing_not_configured',
+            'Razorpay platform billing is not configured',
+            {
+              provider: 'razorpay_platform',
+            },
+          )
         const schedule = autoRenewSchedule(quote, live, plan.code, now)
         if (schedule.upfront_paise > 0 && schedule.upfront_paise < 100)
-          throw reasonError('UNPROCESSABLE', 'amount_too_small', 'Amount is below the online payment minimum')
+          throw reasonError(
+            'UNPROCESSABLE',
+            'amount_too_small',
+            'Amount is below the online payment minimum',
+          )
         let orderId: string | null = null
         if (schedule.order) {
           orderId = newId()
@@ -1136,15 +1219,25 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
             expire_by: expireBy,
             upfront:
               schedule.upfront_paise > 0
-                ? { name: `${plan.name} — first month (offer)`, amount_paise: schedule.upfront_paise }
+                ? {
+                    name: `${plan.name} — first month (offer)`,
+                    amount_paise: schedule.upfront_paise,
+                  }
                 : null,
-            notes: notesFor({ tenant_id: tenantId, plan_code: plan.code, cycle: 'monthly', order_id: orderId }),
+            notes: notesFor({
+              tenant_id: tenantId,
+              plan_code: plan.code,
+              cycle: 'monthly',
+              order_id: orderId,
+            }),
           })
         } catch (err) {
-          if (orderId) await cancelDraftOrder(rt, orderId, 'Razorpay subscription could not be created')
+          if (orderId)
+            await cancelDraftOrder(rt, orderId, 'Razorpay subscription could not be created')
           throw err
         }
-        if (orderId) await markOrderPending(rt, orderId, { payment_ref: sub.id, short_url: sub.short_url })
+        if (orderId)
+          await markOrderPending(rt, orderId, { payment_ref: sub.id, short_url: sub.short_url })
         await insertCheckout(tx, {
           tenant_id: tenantId,
           mode: 'subscription',
@@ -1183,9 +1276,17 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
         const tenantId = req.ctx.tenantId
         const live = await loadLiveSubscription(tx, tenantId, { forUpdate: true })
         if (!live || (live.status !== 'active' && live.status !== 'past_due'))
-          throw reasonError('CONFLICT', 'not_cancellable', 'There is no paid subscription to cancel')
+          throw reasonError(
+            'CONFLICT',
+            'not_cancellable',
+            'There is no paid subscription to cancel',
+          )
         if (live.cancel_at_period_end)
-          throw reasonError('CONFLICT', 'already_cancelled', 'The subscription is already set to cancel')
+          throw reasonError(
+            'CONFLICT',
+            'already_cancelled',
+            'The subscription is already set to cancel',
+          )
         if (live.provider_subscription_id) {
           await rt.razorpay.cancelSubscription(live.provider_subscription_id, { atCycleEnd: true })
         }
@@ -1215,7 +1316,11 @@ export function billingImpls(rt: PlatformRuntime): RouteImpls<Routes> {
         const plans = await loadCloudPlans(deps.db.systemDb)
         const updated = { ...live, cancel_at_period_end: true, cancel_requested_at: now }
         return {
-          data: subscriptionView(updated, plans.find((p) => p.code === live.plan_code) ?? null, now),
+          data: subscriptionView(
+            updated,
+            plans.find((p) => p.code === live.plan_code) ?? null,
+            now,
+          ),
         }
       },
     },

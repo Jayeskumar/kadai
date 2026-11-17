@@ -35,7 +35,8 @@ test('signs in and lands in the shell with role-filtered navigation', async ({
   await page.getByLabel(/Mobile number or email/).fill('9876543210')
   await page.getByLabel(/^Password/).fill('secret-password')
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible()
+  // The home dashboard greets with the shop's name.
+  await expect(page.getByRole('heading', { level: 1, name: 'Sri Murugan Stores' })).toBeVisible()
   if (isMobile) {
     await page.getByRole('button', { name: 'Menu' }).last().click()
   }

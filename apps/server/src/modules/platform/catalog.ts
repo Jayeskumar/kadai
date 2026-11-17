@@ -34,7 +34,11 @@ import {
   offerIneligibility,
   priceOrder,
 } from '@kadai/shared/api/licensing'
-import { CLOUD_PLAN_NAMES, PURCHASABLE_CLOUD_PLANS, cloudPlanProductCode } from '@kadai/shared/api/platform'
+import {
+  CLOUD_PLAN_NAMES,
+  PURCHASABLE_CLOUD_PLANS,
+  cloudPlanProductCode,
+} from '@kadai/shared/api/platform'
 import type { DB } from '../../db/schema.generated'
 import type { Tx } from '../../db/tenant'
 
@@ -265,7 +269,9 @@ export async function loadBuyer(db: Db, tenantId: string): Promise<BillingBuyer>
       ? Promise.resolve(undefined)
       : db
           .selectFrom('memberships as m')
-          .innerJoin('roles as r', (j) => j.onRef('r.id', '=', 'm.role_id').onRef('r.tenant_id', '=', 'm.tenant_id'))
+          .innerJoin('roles as r', (j) =>
+            j.onRef('r.id', '=', 'm.role_id').onRef('r.tenant_id', '=', 'm.tenant_id'),
+          )
           .innerJoin('users as u', 'u.id', 'm.user_id')
           .select(['u.phone'])
           .where('m.tenant_id', '=', tenantId)
@@ -279,7 +285,13 @@ export async function loadBuyer(db: Db, tenantId: string): Promise<BillingBuyer>
   const address = AddressSchema.safeParse(tenant.address)
   const addr: Address = address.success
     ? address.data
-    : { line1: undefined, line2: undefined, city: undefined, district: undefined, pincode: undefined }
+    : {
+        line1: undefined,
+        line2: undefined,
+        city: undefined,
+        district: undefined,
+        pincode: undefined,
+      }
   const business = BusinessTypeSchema.safeParse(tenant.business_type)
   const gstState = tenant.gstin ? stateCodeFromGstin(tenant.gstin) : null
   return {
@@ -372,7 +384,10 @@ type OfferRow = Awaited<ReturnType<ReturnType<typeof offerQuery>['execute']>>[nu
 
 function toOffer(row: OfferRow): OfferRecord | null {
   const kind = OfferKindSchema.safeParse(row.kind)
-  const channel = row.channel === 'cloud' || row.channel === 'onprem' || row.channel === 'both' ? row.channel : null
+  const channel =
+    row.channel === 'cloud' || row.channel === 'onprem' || row.channel === 'both'
+      ? row.channel
+      : null
   if (!kind.success || channel === null) return null
   return {
     id: row.id,
@@ -407,7 +422,11 @@ export function targetsCloudPlans(offer: Pick<PricingOffer, 'applies_to'>): bool
 }
 
 /** Active automatic campaigns (code NULL) on the cloud channel, with redemption counts. */
-export async function loadAutomaticOffers(db: Db, tenantId: string, now: Date): Promise<OfferRecord[]> {
+export async function loadAutomaticOffers(
+  db: Db,
+  tenantId: string,
+  now: Date,
+): Promise<OfferRecord[]> {
   const rows = await offerQuery(db, tenantId)
     .where('o.code', 'is', null)
     .where('o.is_active', '=', true)
@@ -420,7 +439,11 @@ export async function loadAutomaticOffers(db: Db, tenantId: string, now: Date): 
 }
 
 /** Offers that may carry an in-app banner (automatic or coupon; schedule checked by the caller). */
-export async function loadBannerOffers(db: Db, tenantId: string, now: Date): Promise<OfferRecord[]> {
+export async function loadBannerOffers(
+  db: Db,
+  tenantId: string,
+  now: Date,
+): Promise<OfferRecord[]> {
   const rows = await offerQuery(db, tenantId)
     .where('o.banner', 'is not', null)
     .where('o.is_active', '=', true)
@@ -431,7 +454,11 @@ export async function loadBannerOffers(db: Db, tenantId: string, now: Date): Pro
 }
 
 /** The offer of an entered coupon code (case-insensitive), or null when unknown. */
-export async function loadCoupon(db: Db, tenantId: string, code: string): Promise<OfferRecord | null> {
+export async function loadCoupon(
+  db: Db,
+  tenantId: string,
+  code: string,
+): Promise<OfferRecord | null> {
   const row = await offerQuery(db, tenantId).where('o.code', '=', code.trim()).executeTakeFirst()
   return row ? toOffer(row) : null
 }

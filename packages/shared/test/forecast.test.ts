@@ -50,10 +50,16 @@ describe('smartForecast', () => {
   })
 
   it('backtests every candidate and reports the winner with its accuracy', () => {
-    const f = smartForecast({ history_milli: seasonal(8, 100), first_weekday: 0, lead_time_days: 7 })
-    expect(f.candidates.map((c) => c.method).sort()).toEqual(
-      ['croston_sba', 'holt_winters', 'weekday_average'],
-    )
+    const f = smartForecast({
+      history_milli: seasonal(8, 100),
+      first_weekday: 0,
+      lead_time_days: 7,
+    })
+    expect(f.candidates.map((c) => c.method).sort()).toEqual([
+      'croston_sba',
+      'holt_winters',
+      'weekday_average',
+    ])
     const best = Math.min(...f.candidates.map((c) => c.wape_bp!))
     expect(f.accuracy_bp).toBe(10_000 - best)
     expect(f.holdout_days).toBe(14)
@@ -77,7 +83,11 @@ describe('smartForecast', () => {
   })
 
   it('short histories skip the backtest and use the weekday average', () => {
-    const f = smartForecast({ history_milli: [5_000, 6_000, 4_000], first_weekday: 2, lead_time_days: 3 })
+    const f = smartForecast({
+      history_milli: [5_000, 6_000, 4_000],
+      first_weekday: 2,
+      lead_time_days: 3,
+    })
     expect(f.method).toBe('weekday_average')
     expect(f.accuracy_bp).toBeNull()
     expect(f.holdout_days).toBe(0)

@@ -29,7 +29,8 @@ export function addMonthsInstant(start: Date, months: number): Date {
   if (months === 0) return new Date(start.getTime())
   const day = toDateStr(start, BILLING_TZ)
   const target = addMonths(day, months)
-  const shift = startOfDayInstant(target, BILLING_TZ).getTime() - startOfDayInstant(day, BILLING_TZ).getTime()
+  const shift =
+    startOfDayInstant(target, BILLING_TZ).getTime() - startOfDayInstant(day, BILLING_TZ).getTime()
   return new Date(start.getTime() + shift)
 }
 

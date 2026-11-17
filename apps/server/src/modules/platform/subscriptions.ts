@@ -4,7 +4,12 @@
  * any transaction — a tenant transaction (RLS) from the routes and jobs, or the system
  * transaction of the Razorpay webhook.
  */
-import { type BillingCycle, BillingCycleSchema, type SubscriptionStatus, SubscriptionStatusSchema } from '@kadai/shared'
+import {
+  type BillingCycle,
+  BillingCycleSchema,
+  type SubscriptionStatus,
+  SubscriptionStatusSchema,
+} from '@kadai/shared'
 import { CLOUD_PLAN_NAMES, type SubscriptionView, daysLeft } from '@kadai/shared/api/platform'
 import type { EntitlementsService } from '../../core/entitlements'
 import { notifyEntitlementsChanged } from '../../core/entitlements'
@@ -82,7 +87,10 @@ export async function loadLiveSubscription(
 }
 
 /** Live subscription, else the most recent one (ended trial / cancelled / expired). */
-export async function loadCurrentSubscription(tx: Tx, tenantId: string): Promise<SubscriptionRow | null> {
+export async function loadCurrentSubscription(
+  tx: Tx,
+  tenantId: string,
+): Promise<SubscriptionRow | null> {
   const live = await loadLiveSubscription(tx, tenantId)
   if (live) return live
   const row = await baseQuery(tx)
@@ -108,8 +116,12 @@ export async function loadSubscriptionByProviderId(
 }
 
 /** End of what the tenant has right now: trial end while trialing, else the period end. */
-export function effectiveEnd(sub: Pick<SubscriptionRow, 'status' | 'trial_ends_at' | 'current_period_end'>): Date {
-  return sub.status === 'trialing' ? (sub.trial_ends_at ?? sub.current_period_end) : sub.current_period_end
+export function effectiveEnd(
+  sub: Pick<SubscriptionRow, 'status' | 'trial_ends_at' | 'current_period_end'>,
+): Date {
+  return sub.status === 'trialing'
+    ? (sub.trial_ends_at ?? sub.current_period_end)
+    : sub.current_period_end
 }
 
 export function subscriptionView(

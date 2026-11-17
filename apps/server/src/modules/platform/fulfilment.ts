@@ -206,7 +206,10 @@ export function paidTermStart(
 ): { base: Date; period_start: Date } {
   if (live && live.plan_code === planCode) {
     if (live.status === 'trialing') {
-      return { base: maxDate(now, live.trial_ends_at ?? live.current_period_end), period_start: now }
+      return {
+        base: maxDate(now, live.trial_ends_at ?? live.current_period_end),
+        period_start: now,
+      }
     }
     if (live.status === 'active' && live.current_period_end.getTime() > now.getTime()) {
       return { base: live.current_period_end, period_start: live.current_period_start }

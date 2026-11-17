@@ -25,9 +25,7 @@ function parseHeartbeatDate(value: unknown): Date | null {
   return Number.isFinite(ms) ? new Date(ms) : null
 }
 
-export function systemInfoHandlers(
-  rt: PlatformRuntime,
-): Pick<RouteImpls<Routes>, 'systemInfo'> {
+export function systemInfoHandlers(rt: PlatformRuntime): Pick<RouteImpls<Routes>, 'systemInfo'> {
   const { deps } = rt
   return {
     systemInfo: {
@@ -70,8 +68,7 @@ export function systemInfoHandlers(
         const hbAgeMs = hbDate ? Math.max(0, now.getTime() - hbDate.getTime()) : null
         const hbAgeSec = hbAgeMs !== null ? Math.floor(hbAgeMs / 1000) : null
         const workerHealthy =
-          deps.config.embeddedWorker ||
-          (hbAgeMs !== null && hbAgeMs <= WORKER_HEARTBEAT_MAX_AGE_MS)
+          deps.config.embeddedWorker || (hbAgeMs !== null && hbAgeMs <= WORKER_HEARTBEAT_MAX_AGE_MS)
 
         const info: SystemInfo = {
           version: VERSION,

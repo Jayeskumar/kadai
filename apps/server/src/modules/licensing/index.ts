@@ -280,9 +280,7 @@ async function loadTenantAdminRows(
   for (const s of subs) {
     if (!subByTenant.has(s.tenant_id)) subByTenant.set(s.tenant_id, s)
   }
-  const storesMap = new Map<string, number>(
-    storesCount.map((r) => [r.tenant_id, Number(r.cnt)]),
-  )
+  const storesMap = new Map<string, number>(storesCount.map((r) => [r.tenant_id, Number(r.cnt)]))
   const usersMap = new Map<string, number>(usersCount.map((r) => [r.tenant_id, Number(r.cnt)]))
   const regsMap = new Map<string, number>(regsCount.map((r) => [r.tenant_id, Number(r.cnt)]))
   const prodsMap = new Map<string, number>(prodsCount.map((r) => [r.tenant_id, Number(r.cnt)]))
@@ -426,12 +424,7 @@ async function loadTenantDetail(db: Kysely<DB>, id: string): Promise<TenantAdmin
         number: o.number,
         total_paise: Number(o.total_paise),
         status: o.status as
-          | 'draft'
-          | 'pending_payment'
-          | 'paid'
-          | 'fulfilled'
-          | 'cancelled'
-          | 'refunded',
+          'draft' | 'pending_payment' | 'paid' | 'fulfilled' | 'cancelled' | 'refunded',
         created_at: iso(o.created_at),
       })),
       ...legacyInvoices.map((inv) => ({
@@ -583,10 +576,7 @@ async function loadLicenseRow(
   const updatesUntil = dateStr(row.updates_until)
   const supportUntil = dateStr(row.support_until)
   const amc = amcStatus(updatesUntil, today)
-  const term = licenseTermStatus(
-    { valid_until: validUntil, grace_days: row.grace_days },
-    today,
-  )
+  const term = licenseTermStatus({ valid_until: validUntil, grace_days: row.grace_days }, today)
   const activeActs = activations.filter((a) => a.status === 'active')
   const lastCheckIn = activeActs.reduce<Date | null>(
     (acc, a) =>
@@ -598,21 +588,14 @@ async function loadLicenseRow(
   const planLimits = readPlanLimits(planRow?.limits ?? {})
   const featuresOverride = row.features ? toFeatures(row.features) : null
   const limitsOverride =
-    row.limits && typeof row.limits === 'object'
-      ? (row.limits as Partial<typeof planLimits>)
-      : {}
+    row.limits && typeof row.limits === 'object' ? (row.limits as Partial<typeof planLimits>) : {}
 
   const effectiveFeatures = licenseEffectiveFeatures(
     featuresOverride ?? planFeatures,
     addons,
     today,
   )
-  const effectiveLimits = licenseEffectiveLimits(
-    planLimits,
-    limitsOverride,
-    addons,
-    today,
-  )
+  const effectiveLimits = licenseEffectiveLimits(planLimits, limitsOverride, addons, today)
 
   return {
     id: row.id,
@@ -1187,11 +1170,8 @@ function buildHandlers(app: FastifyInstance): RouteImpls<Routes> {
         const validFrom = body.valid_from ?? today
         const amcMonths = product.included_amc_months || 12
         const updatesUntil =
-          body.updates_until !== undefined
-            ? body.updates_until
-            : termEndDate(validFrom, amcMonths)
-        const supportUntil =
-          body.support_until !== undefined ? body.support_until : updatesUntil
+          body.updates_until !== undefined ? body.updates_until : termEndDate(validFrom, amcMonths)
+        const supportUntil = body.support_until !== undefined ? body.support_until : updatesUntil
         const id = newId()
 
         await db

@@ -34,8 +34,7 @@ export const defaultHandlers = [
   // Fallback handlers when a navigation test lands on / or /platform without page-specific MSW setup.
   http.get(apiPath('/purchases/reorder-suggestions'), ({ request }) => {
     const storeId =
-      new URL(request.url).searchParams.get('store_id') ??
-      '0192f0a0-0000-7000-8000-000000000301'
+      new URL(request.url).searchParams.get('store_id') ?? '0192f0a0-0000-7000-8000-000000000301'
     return HttpResponse.json({
       data: {
         store_id: storeId,

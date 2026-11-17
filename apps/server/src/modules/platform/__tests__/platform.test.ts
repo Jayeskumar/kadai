@@ -45,7 +45,9 @@ describe('platform & licensing modules', () => {
   it('returns cloud billing plans, subscription overview, quote, and invoices', async () => {
     const plansRes = await inject('GET', '/billing/plans')
     expect(plansRes.statusCode).toBe(200)
-    const plans = plansRes.json<{ data: { plans: { code: string }[]; current_plan_code: string } }>()
+    const plans = plansRes.json<{
+      data: { plans: { code: string }[]; current_plan_code: string }
+    }>()
     expect(plans.data.current_plan_code).toBe('pro')
     expect(plans.data.plans.some((p) => p.code === 'growth')).toBe(true)
 
@@ -72,7 +74,11 @@ describe('platform & licensing modules', () => {
     const infoRes = await inject('GET', '/system/info')
     expect(infoRes.statusCode).toBe(200)
     const info = infoRes.json<{
-      data: { mode: string; db: { migrations_applied: number }; entitlements: { plan_code: string } }
+      data: {
+        mode: string
+        db: { migrations_applied: number }
+        entitlements: { plan_code: string }
+      }
     }>()
     expect(info.data.mode).toBe('cloud')
     expect(info.data.db.migrations_applied).toBeGreaterThan(0)

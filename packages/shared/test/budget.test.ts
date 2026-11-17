@@ -45,8 +45,21 @@ describe('budget helpers', () => {
 
   it('must-have is the shortage before delivery, in whole packs, capped at the suggestion', () => {
     expect(mustHaveQtyMilli(milk)).toBe(60_000)
-    expect(mustHaveQtyMilli(item({ product_id: 'x', forecast_demand_milli: 7_500, pack_size: 4, suggested_qty_milli: 40_000 }))).toBe(8_000)
-    expect(mustHaveQtyMilli(item({ product_id: 'y', forecast_demand_milli: 50_000, suggested_qty_milli: 10_000 }))).toBe(10_000)
+    expect(
+      mustHaveQtyMilli(
+        item({
+          product_id: 'x',
+          forecast_demand_milli: 7_500,
+          pack_size: 4,
+          suggested_qty_milli: 40_000,
+        }),
+      ),
+    ).toBe(8_000)
+    expect(
+      mustHaveQtyMilli(
+        item({ product_id: 'y', forecast_demand_milli: 50_000, suggested_qty_milli: 10_000 }),
+      ),
+    ).toBe(10_000)
     expect(mustHaveQtyMilli(rice)).toBe(0)
   })
 })

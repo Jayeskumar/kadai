@@ -91,7 +91,8 @@ describe('SignupPage wizard', () => {
     await fillToOwnerStep(user, { gstin: VALID_TN_GSTIN })
     await fillOwner(user)
     await user.click(screen.getByRole('button', { name: 'Create my shop' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    // Signup, GET /me and the redirect take longer than waitFor's default 1 s on a busy runner.
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'), { timeout: 10_000 })
     expect(body).toMatchObject({
       business_type: 'general_store',
       business_name: 'Sri Murugan Stores',

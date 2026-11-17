@@ -234,9 +234,7 @@ export default function ApiKeysPage() {
           if (!open) setCreatedKey(null)
         }}
         title={createdKey ? t('api_keys.dialog.created_title') : t('api_keys.dialog.title')}
-        description={
-          createdKey ? undefined : t('api_keys.dialog.description')
-        }
+        description={createdKey ? undefined : t('api_keys.dialog.description')}
         size="lg"
         footer={
           createdKey ? (
@@ -313,11 +311,7 @@ export default function ApiKeysPage() {
                   >
                     {t('api_keys.dialog.select_all')}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelectedPerms(new Set())}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedPerms(new Set())}>
                     {t('api_keys.dialog.clear_all')}
                   </Button>
                 </div>

@@ -35,9 +35,7 @@ function verifySignature(rawBody: Buffer, signature: string | undefined, secret:
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
-export function webhookHandlers(
-  rt: PlatformRuntime,
-): Pick<RouteImpls<Routes>, 'razorpayWebhook'> {
+export function webhookHandlers(rt: PlatformRuntime): Pick<RouteImpls<Routes>, 'razorpayWebhook'> {
   const { deps } = rt
   return {
     razorpayWebhook: {

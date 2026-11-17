@@ -66,14 +66,17 @@ export interface RazorpayClientOptions {
 }
 
 function notConfigured(): AppError {
-  return new AppError(
-    'PROVIDER_ERROR',
-    'Razorpay platform billing is not configured',
-    { provider: RAZORPAY_PROVIDER, reason: 'billing_not_configured' },
-  )
+  return new AppError('PROVIDER_ERROR', 'Razorpay platform billing is not configured', {
+    provider: RAZORPAY_PROVIDER,
+    reason: 'billing_not_configured',
+  })
 }
 
-function unavailable(message: string, cause?: unknown, extra: Record<string, unknown> = {}): AppError {
+function unavailable(
+  message: string,
+  cause?: unknown,
+  extra: Record<string, unknown> = {},
+): AppError {
   return new AppError(
     'PROVIDER_ERROR',
     message,
@@ -96,7 +99,11 @@ export function createRazorpayClient(
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const configured = Boolean(settings.keyId && settings.keySecret)
 
-  async function call(method: 'GET' | 'POST', path: string, body?: unknown): Promise<Record<string, unknown>> {
+  async function call(
+    method: 'GET' | 'POST',
+    path: string,
+    body?: unknown,
+  ): Promise<Record<string, unknown>> {
     if (!configured) throw notConfigured()
     const auth = Buffer.from(`${settings.keyId}:${settings.keySecret}`).toString('base64')
     let res: Response
@@ -137,7 +144,10 @@ export function createRazorpayClient(
     return json as Record<string, unknown>
   }
 
-  function requireId(obj: Record<string, unknown>, what: string): { id: string; short_url: string } {
+  function requireId(
+    obj: Record<string, unknown>,
+    what: string,
+  ): { id: string; short_url: string } {
     const id = str(obj.id)
     const shortUrl = str(obj.short_url)
     if (!id || !shortUrl) throw unavailable(`Razorpay ${what} response lacks id / short_url`)
@@ -159,7 +169,10 @@ export function createRazorpayClient(
           ...(input.customer.contact ? { contact: input.customer.contact } : {}),
           ...(input.customer.email ? { email: input.customer.email } : {}),
         },
-        notify: { sms: input.notify_sms && Boolean(input.customer.contact), email: Boolean(input.customer.email) },
+        notify: {
+          sms: input.notify_sms && Boolean(input.customer.contact),
+          email: Boolean(input.customer.email),
+        },
         reminder_enable: false,
         notes: input.notes,
         callback_url: input.callback_url,
@@ -168,7 +181,10 @@ export function createRazorpayClient(
       }
       const res = await call('POST', '/v1/payment_links', body)
       const { id, short_url } = requireId(res, 'payment link')
-      const expire = typeof res.expire_by === 'number' && res.expire_by > 0 ? new Date(res.expire_by * 1000) : null
+      const expire =
+        typeof res.expire_by === 'number' && res.expire_by > 0
+          ? new Date(res.expire_by * 1000)
+          : null
       return { id, short_url, status: str(res.status) ?? 'created', expire_by: expire }
     },
 

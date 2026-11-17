@@ -82,10 +82,7 @@ export default function PlatformPlansPage() {
 
   return (
     <div className="grid gap-6 pb-8">
-      <PageHeader
-        title={t('plans.title')}
-        description={t('plans.description')}
-      />
+      <PageHeader title={t('plans.title')} description={t('plans.description')} />
 
       {listQuery.isPending ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true">
@@ -119,9 +116,7 @@ export default function PlatformPlansPage() {
                       {p.is_public ? t('plans.public') : t('plans.private')}
                     </Badge>
                   </div>
-                  <CardTitle className="mt-2 text-lg">
-                    {localizedName(p.name, p.name_ta)}
-                  </CardTitle>
+                  <CardTitle className="mt-2 text-lg">{localizedName(p.name, p.name_ta)}</CardTitle>
                   <p className="font-mono text-xs text-muted-foreground">{p.code}</p>
                 </div>
                 <Button
@@ -191,21 +186,13 @@ export default function PlatformPlansPage() {
             <label htmlFor="plan-name-en" className="text-sm font-medium">
               {t('plans.edit_dialog.name')}
             </label>
-            <Input
-              id="plan-name-en"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <Input id="plan-name-en" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
             <label htmlFor="plan-name-ta" className="text-sm font-medium">
               {t('plans.edit_dialog.name_ta')}
             </label>
-            <Input
-              id="plan-name-ta"
-              value={nameTa}
-              onChange={(e) => setNameTa(e.target.value)}
-            />
+            <Input id="plan-name-ta" value={nameTa} onChange={(e) => setNameTa(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
             <label htmlFor="plan-desc" className="text-sm font-medium">
@@ -222,21 +209,13 @@ export default function PlatformPlansPage() {
               <label htmlFor="plan-monthly" className="text-sm font-medium">
                 {t('plans.edit_dialog.monthly_price')}
               </label>
-              <MoneyInput
-                id="plan-monthly"
-                value={monthlyPaise}
-                onChange={setMonthlyPaise}
-              />
+              <MoneyInput id="plan-monthly" value={monthlyPaise} onChange={setMonthlyPaise} />
             </div>
             <div className="grid gap-1.5">
               <label htmlFor="plan-yearly" className="text-sm font-medium">
                 {t('plans.edit_dialog.yearly_price')}
               </label>
-              <MoneyInput
-                id="plan-yearly"
-                value={yearlyPaise}
-                onChange={setYearlyPaise}
-              />
+              <MoneyInput id="plan-yearly" value={yearlyPaise} onChange={setYearlyPaise} />
             </div>
           </div>
           <Switch

@@ -68,13 +68,17 @@ export function resolvePlatformSettings(
 ): PlatformSettings {
   const stateCode = clean(env.KADAI_VENDOR_STATE_CODE) ?? DEFAULT_VENDOR_STATE_CODE
   if (!isValidStateCode(stateCode))
-    throw new PlatformSettingsError(`KADAI_VENDOR_STATE_CODE "${stateCode}" is not a GST state code`)
+    throw new PlatformSettingsError(
+      `KADAI_VENDOR_STATE_CODE "${stateCode}" is not a GST state code`,
+    )
   const rawGstin = clean(env.KADAI_VENDOR_GSTIN)
   const gstin = rawGstin ? normalizeGstin(rawGstin) : null
   if (gstin !== null) {
     if (!isValidGstin(gstin)) throw new PlatformSettingsError('KADAI_VENDOR_GSTIN is not valid')
     if (gstin.slice(0, 2) !== stateCode)
-      throw new PlatformSettingsError('KADAI_VENDOR_GSTIN does not belong to KADAI_VENDOR_STATE_CODE')
+      throw new PlatformSettingsError(
+        'KADAI_VENDOR_GSTIN does not belong to KADAI_VENDOR_STATE_CODE',
+      )
   }
   const apiUrl = (clean(env.RAZORPAY_PLATFORM_API_URL) ?? 'https://api.razorpay.com').replace(
     /\/+$/,

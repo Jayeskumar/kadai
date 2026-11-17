@@ -29,10 +29,7 @@ export default function PlatformLicensesPage() {
 
   return (
     <div className="grid gap-6 pb-8">
-      <PageHeader
-        title={t('licenses.title')}
-        description={t('licenses.description')}
-      />
+      <PageHeader title={t('licenses.title')} description={t('licenses.description')} />
 
       <SearchInput
         value={q}
@@ -92,10 +89,7 @@ export default function PlatformLicensesPage() {
                         {l.updates_until ? formatDate(l.updates_until) : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge
-                          size="sm"
-                          tone={l.status === 'active' ? 'success' : 'danger'}
-                        >
+                        <Badge size="sm" tone={l.status === 'active' ? 'success' : 'danger'}>
                           {l.status}
                         </Badge>
                       </td>

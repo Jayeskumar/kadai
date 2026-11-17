@@ -215,7 +215,8 @@ export function smartForecast(input: SmartForecastInput): SmartForecast {
   }
 
   // Backtest on the last `holdout` days when there is enough history to train and to score.
-  const holdout = y.length >= 3 * SEASON ? Math.min(SMART_FORECAST_HOLDOUT_DAYS, Math.floor(y.length / 3)) : 0
+  const holdout =
+    y.length >= 3 * SEASON ? Math.min(SMART_FORECAST_HOLDOUT_DAYS, Math.floor(y.length / 3)) : 0
   const train = y.slice(0, y.length - holdout)
   const actual = y.slice(y.length - holdout)
   const actualSum = actual.reduce((s, v) => s + v, 0)

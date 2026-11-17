@@ -18,6 +18,8 @@ export default defineConfig(
     '**/dev-dist/**',
     '**/schema.generated.ts',
     'data/**',
+    // One-off scripts that generated the modules (kept for history; not part of the product).
+    'tools/build-orchestration/**',
   ]),
   js.configs.recommended,
   tseslint.configs.recommended,

@@ -686,7 +686,9 @@ function BudgetCard({
               style={{ width: `${String(Math.min(100, covered))}%` }}
             />
           </div>
-          <p className={cn('text-sm', covered >= 100 ? 'text-success' : 'font-medium text-warning')}>
+          <p
+            className={cn('text-sm', covered >= 100 ? 'text-success' : 'font-medium text-warning')}
+          >
             {t('reorder.budget_covers', { pct: covered })}
             {leftOut > 0 ? ` · ${t('reorder.budget_left_out', { count: leftOut })}` : ''}
           </p>

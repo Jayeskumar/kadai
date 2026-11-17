@@ -37,10 +37,7 @@ export default function PlatformTenantsPage() {
 
   return (
     <div className="grid gap-6 pb-8">
-      <PageHeader
-        title={t('tenants.title')}
-        description={t('tenants.description')}
-      />
+      <PageHeader title={t('tenants.title')} description={t('tenants.description')} />
 
       <SearchInput
         value={q}

@@ -65,7 +65,11 @@ export default function BillingPage() {
   const plans = plansQuery.data?.data.plans ?? []
   const invoices = invoicesQuery.data?.data ?? []
 
-  const handleQuote = (planCode: 'growth' | 'pro', nextCycle: BillingCycle, code: string | null) => {
+  const handleQuote = (
+    planCode: 'growth' | 'pro',
+    nextCycle: BillingCycle,
+    code: string | null,
+  ) => {
     quoteMutation.mutate({
       body: {
         plan_code: planCode,
@@ -123,11 +127,7 @@ export default function BillingPage() {
   if (!data) {
     return (
       <div className="mx-auto grid w-full max-w-5xl gap-6 pb-8">
-        <PageHeader
-          title={t('title')}
-          description={t('description')}
-          backTo="/settings"
-        />
+        <PageHeader title={t('title')} description={t('description')} backTo="/settings" />
         <EmptyState
           title={t('load_error')}
           description={describeError(overview.error).title}
@@ -149,11 +149,7 @@ export default function BillingPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-6 pb-8">
-      <PageHeader
-        title={t('title')}
-        description={t('description')}
-        backTo="/settings"
-      />
+      <PageHeader title={t('title')} description={t('description')} backTo="/settings" />
 
       {/* Active automatic offers */}
       {data.offers.length > 0 ? (
@@ -195,16 +191,8 @@ export default function BillingPage() {
                 })}
               </p>
             </div>
-            <Button
-              asChild
-              size="sm"
-              rightIcon={<ExternalLink className="size-4" />}
-            >
-              <a
-                href={data.pending_checkout.short_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+            <Button asChild size="sm" rightIcon={<ExternalLink className="size-4" />}>
+              <a href={data.pending_checkout.short_url} target="_blank" rel="noopener noreferrer">
                 {t('pending_checkout.pay_now')}
               </a>
             </Button>
@@ -343,12 +331,9 @@ export default function BillingPage() {
               const title = names
                 ? localizedName(names.en, names.ta)
                 : localizedName(p.name, p.name_ta)
-              const priceExcl =
-                cycle === 'yearly' ? p.price_yearly_paise : p.price_monthly_paise
+              const priceExcl = cycle === 'yearly' ? p.price_yearly_paise : p.price_monthly_paise
               const priceIncl =
-                cycle === 'yearly'
-                  ? p.price_yearly_incl_gst_paise
-                  : p.price_monthly_incl_gst_paise
+                cycle === 'yearly' ? p.price_yearly_incl_gst_paise : p.price_monthly_incl_gst_paise
               const canBuy = (PURCHASABLE_CLOUD_PLANS as readonly string[]).includes(p.code)
               const isSelected = selectedPlan === p.code
               return (
@@ -381,7 +366,9 @@ export default function BillingPage() {
                     ) : null}
                     <div className="pt-2">
                       <span className="text-2xl font-bold tabular-nums">
-                        {priceExcl === 0 ? t('plans.free_forever') : formatMoney(priceExcl, { decimals: 0 })}
+                        {priceExcl === 0
+                          ? t('plans.free_forever')
+                          : formatMoney(priceExcl, { decimals: 0 })}
                       </span>
                       {priceExcl > 0 ? (
                         <>
@@ -416,8 +403,7 @@ export default function BillingPage() {
                       </li>
                       <li className="flex items-center gap-1.5">
                         <Check className="size-3.5 text-success" />
-                        {t('usage.metrics.users')}:{' '}
-                        {p.limits.users === null ? '∞' : p.limits.users}
+                        {t('usage.metrics.users')}: {p.limits.users === null ? '∞' : p.limits.users}
                       </li>
                       <li className="flex items-center gap-1.5">
                         <Check className="size-3.5 text-success" />
@@ -548,10 +534,7 @@ export default function BillingPage() {
                         <Money paise={inv.total_paise} />
                       </td>
                       <td className="py-2.5 ps-3 text-end">
-                        <Badge
-                          size="sm"
-                          tone={inv.status === 'paid' ? 'success' : 'neutral'}
-                        >
+                        <Badge size="sm" tone={inv.status === 'paid' ? 'success' : 'neutral'}>
                           {t(`invoices.status.${inv.status}`)}
                         </Badge>
                       </td>

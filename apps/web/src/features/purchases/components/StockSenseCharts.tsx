@@ -194,9 +194,27 @@ export function ProductForecastChart({ detail }: { detail: StockSenseProduct }) 
             ]}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} formatter={(key: string) => label(key)} />
-          <Bar isAnimationActive={false} yAxisId="qty" dataKey="recorded" stackId="h" fill={C.primary} />
-          <Bar isAnimationActive={false} yAxisId="qty" dataKey="imported" stackId="h" fill={C.accent} />
-          <Bar isAnimationActive={false} yAxisId="qty" dataKey="forecast" fill={C.warning} opacity={0.8} />
+          <Bar
+            isAnimationActive={false}
+            yAxisId="qty"
+            dataKey="recorded"
+            stackId="h"
+            fill={C.primary}
+          />
+          <Bar
+            isAnimationActive={false}
+            yAxisId="qty"
+            dataKey="imported"
+            stackId="h"
+            fill={C.accent}
+          />
+          <Bar
+            isAnimationActive={false}
+            yAxisId="qty"
+            dataKey="forecast"
+            fill={C.warning}
+            opacity={0.8}
+          />
           <Line
             yAxisId="stock"
             dataKey="stock"
