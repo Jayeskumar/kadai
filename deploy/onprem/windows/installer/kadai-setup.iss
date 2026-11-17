@@ -528,6 +528,9 @@ end;
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
+  // Inno Setup calls this in silent installs too: a message box there would wait forever for
+  // a click nobody can make. PrepareToInstall checks the same things silently (exit code 7).
+  if WizardSilent() then Exit;
   if CurPageID = PortPage.ID then
   begin
     if not ValidPort(PortPage.Values[0]) then
@@ -669,7 +672,7 @@ end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
-  Params, KitDir, DepsDir, ExitFile, SummaryFile, SecretFile, LastLine, LastError, Detail: String;
+  Params, KitDir, DepsDir, ExitFile, StartedFile, SummaryFile, SecretFile, LastLine, LastError, Detail: String;
   ExitText: AnsiString;
   RC, Ticks, Step, StepTicks, PrevStep, Position, Secs: Integer;
 begin
@@ -707,12 +710,14 @@ begin
     KitDir := ExpandConstant('{tmp}\kit\windows');
     DepsDir := ExpandConstant('{tmp}\deps');
     ExitFile := ExpandConstant('{tmp}\kadai-exit-code.txt');
+    StartedFile := ExpandConstant('{tmp}\kadai-started.txt');
     SummaryFile := ExpandConstant('{tmp}\kadai-summary.txt');
     Log('Kadai install log: ' + InstallLog);
 
     Params := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ' + Quote(KitDir + '\run-install.ps1') +
       ' -LogFile ' + Quote(InstallLog) +
       ' -ExitCodeFile ' + Quote(ExitFile) +
+      ' -StartedFile ' + Quote(StartedFile) +
       ' -SummaryFile ' + Quote(SummaryFile) +
       ' -InstallDir ' + Quote(ExpandConstant('{app}')) +
       ' -BundlePath ' + Quote(DepsDir + '\{#BundleName}') +
@@ -780,6 +785,13 @@ begin
         if LastLine <> '' then Detail := Detail + '   -   ' + LastLine;
         ProgressPage.SetText(CustomMessage(StepKey(Step)), Detail);
         ProgressPage.SetProgress(Position, 1000);
+      end;
+      // PowerShell refused to run the script (policy, broken install, bad argument): it then
+      // never writes the exit code, so do not wait for the full timeout.
+      if (Ticks > 240) and not FileExists(StartedFile) and not FileExists(ExitFile) then
+      begin
+        Result := FailWith(FmtMessage(CustomMessage('FailStart'), ['run-install.ps1 did not start']));
+        Exit;
       end;
       if Ticks > InstallTimeoutSeconds * 2 then
       begin

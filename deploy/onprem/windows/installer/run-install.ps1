@@ -21,6 +21,7 @@
 param(
   [Parameter(Mandatory = $true)][string]$LogFile,
   [Parameter(Mandatory = $true)][string]$ExitCodeFile,
+  [string]$StartedFile,
   [string]$SummaryFile,
   [ValidateSet('Install', 'Upgrade', 'Reinstall')][string]$Mode = 'Install',
   [Parameter(Mandatory = $true)][string]$InstallDir,
@@ -64,6 +65,8 @@ function Write-Summary([string]$Path) {
 
 $code = 1
 $transcript = $false
+# Tells KadaiSetup.exe that PowerShell runs this script (it gives up quickly otherwise).
+if ($StartedFile) { [IO.File]::WriteAllText($StartedFile, [string]$PID) }
 try {
   $logDir = Split-Path -Parent $LogFile
   if ($logDir) { New-Item -ItemType Directory -Force -Path $logDir | Out-Null }
