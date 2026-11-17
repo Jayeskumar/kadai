@@ -93,6 +93,11 @@ public static class KadaiTourWin {
     return bmp;
   }
   public static void Click(IntPtr button) { PostMessage(button, 0x00F5, IntPtr.Zero, IntPtr.Zero); }  // BM_CLICK
+  public static int[] RectOf(IntPtr hwnd) {
+    RECT r;
+    GetWindowRect(hwnd, out r);
+    return new int[] { r.Left, r.Top, r.Right, r.Bottom };
+  }
 }
 '@
 
@@ -103,8 +108,7 @@ if (-not $Prefix) { $Prefix = $Lang }
 $script:Shot = 0
 
 # Button captions without the "&" accelerator mark, English and Tamil.
-$NextNames = @('Next >', 'அடுத்து >')
-$InstallNames = @('Install', 'நிறுவு')
+$InstallNames = @('Install', 'நிறுவு')   # caption of Next on the Ready page
 $FinishNames = @('Finish', 'முடி')
 $OkNames = @('OK', 'சரி', 'Yes', 'ஆம்')
 
@@ -128,6 +132,38 @@ function Get-Button([IntPtr]$Window, [string[]]$Names) {
     if ($null -eq $Names -or $Names -contains $text) { return $c }
   }
   return [IntPtr]::Zero
+}
+
+# The wizard's navigation row (Back, Next/Install/Finish, Cancel): push buttons at the bottom,
+# found by position so it does not depend on the captions of an Inno Setup version or language.
+function Get-NavButtons([IntPtr]$Window) {
+  $buttons = foreach ($c in [KadaiTourWin]::Children($Window)) {
+    if (-not [KadaiTourWin]::IsWindowVisible($c)) { continue }
+    $class = [KadaiTourWin]::ClassOf($c)
+    if ($class -notmatch 'Button' -or $class -match 'Radio|Check') { continue }
+    $r = [KadaiTourWin]::RectOf($c)
+    [pscustomobject]@{ Handle = $c; Left = $r[0]; Top = $r[1]; Text = [KadaiTourWin]::TextOf($c).Replace('&', '') }
+  }
+  $buttons = @($buttons)
+  if ($buttons.Count -eq 0) { return @() }
+  $bottom = ($buttons | Measure-Object -Property Top -Maximum).Maximum
+  return @($buttons | Where-Object { $_.Top -ge $bottom - 8 } | Sort-Object Left)
+}
+
+# Next (also "Install" and "Finish"): left of Cancel, or the only button left on the finish page.
+function Get-NextButton([IntPtr]$Window) {
+  $nav = Get-NavButtons $Window
+  if ($nav.Count -eq 0) { return $null }
+  $next = if ($nav.Count -ge 2) { $nav[$nav.Count - 2] } else { $nav[0] }
+  if (-not [KadaiTourWin]::IsWindowEnabled($next.Handle)) { return $null }
+  return $next
+}
+
+function Write-Controls([IntPtr]$Window) {
+  foreach ($c in [KadaiTourWin]::Children($Window)) {
+    if (-not [KadaiTourWin]::IsWindowVisible($c)) { continue }
+    Write-Host ("  {0,-24} '{1}' enabled={2}" -f [KadaiTourWin]::ClassOf($c), [KadaiTourWin]::TextOf($c), [KadaiTourWin]::IsWindowEnabled($c))
+  }
 }
 
 function Save-Shot([IntPtr]$Window, [string]$Name) {
@@ -191,14 +227,21 @@ try {
   while ($true) {
     $page++
     if ($page -gt 12) { throw '[wizard-tour] more pages than expected' }
-    Wait-Until { Get-Button $wizard ($NextNames + $InstallNames) } 60 'the Next button' | Out-Null
-    $install = Get-Button $wizard $InstallNames
-    if ($install -ne [IntPtr]::Zero) {
+    $deadline = (Get-Date).AddSeconds(60)
+    $next = $null
+    while (-not $next -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 400; $next = Get-NextButton $wizard }
+    if (-not $next) {
+      Save-Shot $wizard "page$page-stuck" | Out-Null
+      Write-Controls $wizard
+      throw "[wizard-tour] no enabled Next button on page $page"
+    }
+    Write-Step "page ${page}: buttons $((Get-NavButtons $wizard | ForEach-Object { $_.Text }) -join ' | ')"
+    if ($InstallNames -contains $next.Text) {
       Save-Shot $wizard 'ready' | Out-Null
       break
     }
     $before = Save-Shot $wizard "page$page"
-    [KadaiTourWin]::Click((Get-Button $wizard $NextNames))
+    [KadaiTourWin]::Click($next.Handle)
     Start-Sleep -Seconds 4   # the port page checks the port before it moves on
     if (Close-MessageBox "page$page-message") {
       if ($listener) { $listener.Stop(); $listener = $null; Write-Step 'port released' }
@@ -211,7 +254,10 @@ try {
     try { $bmp.Save($tmp, [Drawing.Imaging.ImageFormat]::Png) } finally { $bmp.Dispose() }
     $after = (Get-FileHash -LiteralPath $tmp -Algorithm MD5).Hash
     Remove-Item -LiteralPath $tmp -Force
-    if ($after -eq $before) { throw "[wizard-tour] page $page did not change after Next" }
+    if ($after -eq $before) {
+      Write-Controls $wizard
+      throw "[wizard-tour] page $page did not change after Next"
+    }
   }
 
   if (-not $Install) {
@@ -219,7 +265,7 @@ try {
     return
   }
 
-  [KadaiTourWin]::Click((Get-Button $wizard $InstallNames))
+  [KadaiTourWin]::Click($next.Handle)
   $started = Get-Date
   $captureAt = @(6, 20, 45, 75, 110, 160, 220)
   $next = 0
@@ -227,7 +273,8 @@ try {
     Start-Sleep -Seconds 2
     $elapsed = ((Get-Date) - $started).TotalSeconds
     if (Close-MessageBox 'failure') { throw '[wizard-tour] Setup reported a failure (see the picture and the logs)' }
-    if ((Get-Button $wizard $FinishNames) -ne [IntPtr]::Zero) { break }
+    $done = Get-NextButton $wizard
+    if ($done -and ($FinishNames -contains $done.Text -or (Get-NavButtons $wizard).Count -eq 1)) { break }
     if ($next -lt $captureAt.Count -and $elapsed -ge $captureAt[$next]) {
       Save-Shot $wizard ('progress-{0:d3}s' -f [int]$elapsed) | Out-Null
       $next++
@@ -236,7 +283,7 @@ try {
   }
   Start-Sleep -Seconds 1
   Save-Shot $wizard 'finish' | Out-Null
-  [KadaiTourWin]::Click((Get-Button $wizard $FinishNames))
+  [KadaiTourWin]::Click((Get-NextButton $wizard).Handle)
   Write-Step "installed in $([int]((Get-Date) - $started).TotalSeconds) s"
 
   # "Open Kadai now" starts Kadai in its own window: a picture of the desktop, best effort.

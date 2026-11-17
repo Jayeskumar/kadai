@@ -55,7 +55,21 @@ describe('on-prem setup wizard', () => {
 
   afterAll(async () => {
     await t?.close()
-    await admin(`DROP DATABASE IF EXISTS ${dbName} WITH (FORCE)`)
+    // Pool connections of the runtime role can outlive close() for a moment, and the owner role
+    // may not terminate them (FORCE): retry briefly. A leftover throw-away database must not
+    // fail a suite whose tests passed.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await admin(`DROP DATABASE IF EXISTS ${dbName} WITH (FORCE)`)
+        return
+      } catch (error) {
+        if (attempt >= 20) {
+          console.warn(`could not drop ${dbName}: ${(error as Error).message}`)
+          return
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250))
+      }
+    }
   })
 
   const status = async () =>
