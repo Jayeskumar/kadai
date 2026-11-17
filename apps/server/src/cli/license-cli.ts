@@ -16,6 +16,7 @@ import {
   trustedLicenseKeys,
   verifyLicense,
 } from '../core/license'
+import { LICENSE_PUBLIC_KEYS } from '../core/license-keys'
 import type { CliIo } from './types'
 
 const USAGE = `Usage:
@@ -25,6 +26,7 @@ const USAGE = `Usage:
                      --max-stores <n> --valid-from <YYYY-MM-DD>
                      (--valid-until <YYYY-MM-DD> | --perpetual) [--installation-id <id>]
                      [--features a,b,c] [--limits '{"users":10}'] [--license-id <id>] [--out <file>]
+  issue-license keys      (keys this build trusts; exit code 3 when none is a production key)
   issue-license verify --file <license.json> [--public-key <public.pem>] [--installation-id <id>]
                        [--production] [--today <YYYY-MM-DD>]`
 
@@ -37,10 +39,21 @@ export async function runLicenseCli(argv: string[], io: CliIo): Promise<number> 
       return sign(rest, io)
     case 'verify':
       return verifyCmd(rest, io)
+    case 'keys':
+      return keysCmd(io)
     default:
       io.log(USAGE)
       return sub === undefined || sub === 'help' || sub === '--help' ? 0 : 64
   }
+}
+
+/** Lists the embedded keys, so a release can be checked before it reaches a customer. */
+function keysCmd(io: CliIo): number {
+  for (const k of LICENSE_PUBLIC_KEYS)
+    io.log(`${k.kid}\t${k.dev_only ? 'development only (rejected in production)' : 'production'}`)
+  if (LICENSE_PUBLIC_KEYS.some((k) => !k.dev_only)) return 0
+  io.log('No production key: this build accepts no customer license (Free plan only).')
+  return 3
 }
 
 async function keygen(argv: string[], io: CliIo): Promise<number> {

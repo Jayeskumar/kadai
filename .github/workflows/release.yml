@@ -102,6 +102,8 @@ jobs:
             GIT_COMMIT=${{ github.sha }}
             BUILD_DATE=${{ fromJSON(steps.docker-meta.outputs.json).labels['org.opencontainers.image.created'] }}
             SOURCE_URL=${{ github.server_url }}/${{ github.repository }}
+            KADAI_VENDOR_LICENSE_KID=${{ vars.KADAI_VENDOR_LICENSE_KID }}
+            KADAI_VENDOR_LICENSE_PUBLIC_KEY=${{ vars.KADAI_VENDOR_LICENSE_PUBLIC_KEY }}
           cache-from: type=gha,scope=kadai-release
           cache-to: type=gha,mode=max,scope=kadai-release
           provenance: mode=max
@@ -159,9 +161,20 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Build server and web app
+        env:
+          KADAI_VENDOR_LICENSE_KID: ${{ vars.KADAI_VENDOR_LICENSE_KID }}
+          KADAI_VENDOR_LICENSE_PUBLIC_KEY: ${{ vars.KADAI_VENDOR_LICENSE_PUBLIC_KEY }}
         run: |
           pnpm --filter @kadai/server build
           pnpm --filter @kadai/web build
+      - name: The build accepts customer licenses (production key embedded)
+        env:
+          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+        run: |
+          if ! node apps/server/dist/cli.js issue-license keys; then
+            msg="No production license key in this build: set the repository variables KADAI_VENDOR_LICENSE_KID and KADAI_VENDOR_LICENSE_PUBLIC_KEY (apps/server/scripts/dev-keys/README.md)"
+            if [ "$PRERELEASE" = true ]; then echo "::warning::$msg"; else echo "::error::$msg"; exit 1; fi
+          fi
       - name: Assemble and smoke-test the bundle
         run: .github/scripts/bundle.sh "${{ needs.meta.outputs.version }}" "${{ matrix.target }}" dist/release
       - uses: actions/upload-artifact@v4

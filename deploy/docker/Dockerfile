@@ -48,7 +48,12 @@ RUN --mount=type=secret,id=extra_ca \
 COPY . .
 RUN --mount=type=cache,id=kadai-pnpm-store,target=/pnpm/store,sharing=locked \
     pnpm install --frozen-lockfile --offline
-RUN pnpm --filter @kadai/server build \
+# The vendor's production license key (public, see apps/server/scripts/dev-keys/README.md).
+ARG KADAI_VENDOR_LICENSE_KID=""
+ARG KADAI_VENDOR_LICENSE_PUBLIC_KEY=""
+RUN KADAI_VENDOR_LICENSE_KID="$KADAI_VENDOR_LICENSE_KID" \
+    KADAI_VENDOR_LICENSE_PUBLIC_KEY="$KADAI_VENDOR_LICENSE_PUBLIC_KEY" \
+    pnpm --filter @kadai/server build \
  && pnpm --filter @kadai/web build \
  && test -f apps/server/dist/server.js \
  && test -f apps/web/dist/index.html

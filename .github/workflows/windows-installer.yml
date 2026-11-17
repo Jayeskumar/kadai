@@ -94,9 +94,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - name: Build server and web app
+        env:
+          KADAI_VENDOR_LICENSE_KID: ${{ vars.KADAI_VENDOR_LICENSE_KID }}
+          KADAI_VENDOR_LICENSE_PUBLIC_KEY: ${{ vars.KADAI_VENDOR_LICENSE_PUBLIC_KEY }}
         run: |
           pnpm --filter @kadai/server build
           pnpm --filter @kadai/web build
+          node apps/server/dist/cli.js issue-license keys || echo "::warning::This installer accepts no customer license (Free plan only): set the repository variables KADAI_VENDOR_LICENSE_KID and KADAI_VENDOR_LICENSE_PUBLIC_KEY"
       - name: Assemble and smoke-test the win-x64 bundle
         run: .github/scripts/bundle.sh "${{ steps.v.outputs.version }}" win-x64 dist/release
 
