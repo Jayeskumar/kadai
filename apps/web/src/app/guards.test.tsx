@@ -57,6 +57,38 @@ describe('route guards', () => {
     expect(await screen.findByText('Not available here')).toBeInTheDocument()
   })
 
+  it('shows the "turned off" page for screens of a hidden module, with a way back', async () => {
+    await signIn(makeMe({ hiddenModules: ['purchases', 'accounts'] }))
+    renderApp('/purchases/bills')
+    expect(await screen.findByText('Purchases & suppliers is turned off')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Choose screens' })).toHaveAttribute(
+      'href',
+      '/settings/modules',
+    )
+  })
+
+  it('leaves hidden modules out of the sidebar but keeps the core', async () => {
+    server.use(
+      http.get(apiPath('/products'), () =>
+        HttpResponse.json({ data: [], page: { limit: 50, offset: 0, total: 0 } }),
+      ),
+      http.get(apiPath('/categories'), () => HttpResponse.json({ data: [] })),
+    )
+    await signIn(makeMe({ hiddenModules: ['inventory', 'purchases', 'labels'] }))
+    renderApp('/catalog/products')
+    await screen.findByRole('heading', { level: 1, name: 'Products' }, { timeout: 5000 })
+    const nav = screen.getAllByRole('navigation').find((n) => n.querySelector('a[href="/pos"]'))
+    expect(nav).toBeDefined()
+    const hrefs = [...(nav?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/catalog/products')
+    expect(hrefs).toContain('/sales/invoices')
+    expect(hrefs).not.toContain('/inventory/stock')
+    expect(hrefs).not.toContain('/purchases/orders')
+    expect(hrefs).not.toContain('/parties/suppliers')
+    expect(hrefs).not.toContain('/catalog/labels')
+    expect(hrefs).toContain('/parties/customers')
+  })
+
   it('treats pharmacy-only screens as not found for other shops', async () => {
     await signIn(makeMe({ businessType: 'general_store' }))
     renderApp('/parties/doctors')

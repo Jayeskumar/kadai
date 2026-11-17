@@ -47,6 +47,8 @@ describe('on-prem setup wizard', () => {
         DATABASE_URL: urlFor(dbName, 'app'),
         DATABASE_SYSTEM_URL: urlFor(dbName, 'owner'),
         KADAI_SETUP_TOKEN: SETUP_TOKEN,
+        // Screens chosen in the Windows installer (one typo, ignored).
+        KADAI_MODULES: 'inventory, reports,khata',
       },
     })
   })
@@ -124,6 +126,19 @@ describe('on-prem setup wizard', () => {
       legal_name: 'Kaveri Medicals Pvt Ltd',
     })
     expect(profile.stores.map((s) => s.name)).toEqual(['Kaveri Medicals – Main Road'])
+    // KADAI_MODULES lists the modules to show; every other optional module starts hidden.
+    expect(profile.settings.modules.hidden).toEqual([
+      'purchases',
+      'customers',
+      'payments',
+      'accounts',
+      'estimates',
+      'promotions',
+      'labels',
+      'notifications',
+    ])
+    // The pharmacy preset still applies on top of the defaults.
+    expect(profile.settings.catalog.default_track_batches).toBe(true)
     // No license installed yet: evaluation on the Free plan, from the license source.
     expect(profile.entitlements).toMatchObject({ plan_code: 'free', source: 'license' })
 

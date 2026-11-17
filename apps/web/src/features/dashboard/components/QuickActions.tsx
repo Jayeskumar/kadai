@@ -8,7 +8,7 @@ import { Link } from 'react-router'
 import { Kbd } from '@/components/ui'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/cn'
-import { checkAccess, type AccessRule } from '@/lib/permissions'
+import { checkAccess, hiddenModuleOf, type AccessRule } from '@/lib/permissions'
 
 interface Action {
   key: 'new_bill' | 'add_product' | 'purchase_entry' | 'receive_payment'
@@ -51,7 +51,10 @@ const ACTIONS: readonly Action[] = [
 export function QuickActions() {
   const { t } = useTranslation('dashboard')
   const auth = useAuth((s) => s)
-  const allowed = ACTIONS.filter((a) => checkAccess(a.rule, auth) === 'allowed')
+  const allowed = ACTIONS.filter(
+    (a) =>
+      !hiddenModuleOf(a.to.split('?')[0] ?? a.to, auth) && checkAccess(a.rule, auth) === 'allowed',
+  )
   if (!allowed.length) return null
   return (
     <nav aria-label={t('actions.label')} className="grid grid-cols-2 gap-2 sm:grid-cols-4">

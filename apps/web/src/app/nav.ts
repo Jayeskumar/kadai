@@ -57,7 +57,7 @@ import {
 } from 'lucide-react'
 import type { AuthState } from '@/lib/auth'
 import type { TranslationKey } from '@/lib/i18n-resources'
-import { checkAccess, type AccessRule } from '@/lib/permissions'
+import { checkAccess, hiddenModuleOf, type AccessRule } from '@/lib/permissions'
 
 export interface NavItem extends AccessRule {
   id: string
@@ -526,13 +526,17 @@ export const NAV: readonly NavGroup[] = [
   },
 ]
 
-/** Groups and items the current user may see (no business = platform items only). */
+/**
+ * Groups and items the current user may see (no business = platform items only); screens of
+ * modules the business switched off (Settings -> Screens) are left out.
+ */
 export function visibleNav(state: AuthState, groups: readonly NavGroup[] = NAV): NavGroup[] {
   return groups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
         if (!state.me && !item.platformAdmin) return false
+        if (hiddenModuleOf(item.to, state)) return false
         return checkAccess(item, state) === 'allowed'
       }),
     }))

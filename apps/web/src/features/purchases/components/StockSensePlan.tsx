@@ -410,14 +410,6 @@ function PlanRow({
   const { t } = useTranslation('purchases')
   const name = localizedName(item.name, item.name_ta)
   const packed = item.pack_size > 1
-  const qty = (milli: number) => (
-    <Qty
-      milli={milli}
-      unit={item.unit}
-      packSize={item.pack_size}
-      packUnit={packUnitFor(item.unit)}
-    />
-  )
   return (
     <li
       className={cn(

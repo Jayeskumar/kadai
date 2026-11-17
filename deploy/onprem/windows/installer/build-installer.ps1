@@ -148,7 +148,15 @@ foreach ($f in @('install.ps1', 'backup.ps1', 'restore.ps1', 'kadai-common.ps1',
 }
 Copy-Item -LiteralPath (Join-Path $here 'run-install.ps1') -Destination $kit
 Copy-Item -LiteralPath (Join-Path $here 'README.txt') -Destination $payload
-Copy-Item -LiteralPath (Join-Path $repoRoot 'apps\web\public\favicon.ico') -Destination (Join-Path $payload 'kadai.ico')
+# Branded wizard images and the multi-size icon (rendered by assets\render-assets.mjs).
+$assets = Join-Path $payload 'assets'
+New-Item -ItemType Directory -Force -Path $assets | Out-Null
+Get-ChildItem -LiteralPath (Join-Path $here 'assets') -File |
+  Where-Object { $_.Extension -in '.bmp', '.ico' } |
+  ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $assets }
+foreach ($required in @('kadai.ico', 'wizard-164x314.bmp', 'small-55x55.bmp')) {
+  if (-not (Test-Path -LiteralPath (Join-Path $assets $required))) { Stop-Build "installer asset missing: assets\$required" }
+}
 
 # --- compile ------------------------------------------------------------------------------
 if (-not $Iscc) {

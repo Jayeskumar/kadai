@@ -25,13 +25,16 @@ import {
 import { useCan, useFeature } from '@/lib/auth'
 import { useRouteMutation } from '@/lib/query'
 import { nameOf } from '@/features/reports/lib/labels'
+import { useModuleShown } from '@/lib/permissions'
 
 type Debtor = Dashboard['receivables']['top_debtors'][number]
 
 export function DuesCard({ receivables }: { receivables: Dashboard['receivables'] | null }) {
   const { t } = useTranslation('dashboard')
   const canRemind = useCan('customers.write')
-  const canSeeCustomers = useCan('customers.read')
+  const customersShown = useModuleShown('customers')
+  const reportsShown = useModuleShown('reports')
+  const canSeeCustomers = useCan('customers.read') && customersShown
   const messaging = useFeature('notifications')
   const [pending, setPending] = useState<string | null>(null)
   const remind = useRouteMutation(notificationsRoutes.remindCustomer, {
@@ -146,9 +149,11 @@ export function DuesCard({ receivables }: { receivables: Dashboard['receivables'
             </Link>
           </Button>
         ) : null}
-        <Button asChild variant="link" size="sm">
-          <Link to="/reports/customer-outstanding">{t('dues.open_report')}</Link>
-        </Button>
+        {reportsShown ? (
+          <Button asChild variant="link" size="sm">
+            <Link to="/reports/customer-outstanding">{t('dues.open_report')}</Link>
+          </Button>
+        ) : null}
       </div>
     </Card>
   )

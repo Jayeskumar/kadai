@@ -13,11 +13,15 @@
   The PostgreSQL superuser password of an existing PostgreSQL 16 installation (if any) is
   passed in a file (-PgSecretFile) that is deleted as soon as it is read, never on a command
   line.
+
+  After a successful run, -SummaryFile receives the addresses counter PCs and phones can open
+  (URL=http://<pc name>:<port> and one line per LAN IPv4 address), shown on the finish page.
 #>
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)][string]$LogFile,
   [Parameter(Mandatory = $true)][string]$ExitCodeFile,
+  [string]$SummaryFile,
   [ValidateSet('Install', 'Upgrade', 'Reinstall')][string]$Mode = 'Install',
   [Parameter(Mandatory = $true)][string]$InstallDir,
   [Parameter(Mandatory = $true)][string]$BundlePath,
@@ -26,12 +30,38 @@ param(
   [string]$WinSWExe,
   [ValidateRange(1, 65535)][int]$Port = 8080,
   [string]$PgSecretFile,
+  [string]$Modules,
   [switch]$SetNetworkPrivate,
   [switch]$BackupTask,
   [switch]$NoShortcut
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Addresses for the finish page: the PC name and the IPv4 address of each connected adapter
+# (phones often cannot resolve Windows PC names). Never fails the installation.
+function Write-Summary([string]$Path) {
+  try {
+    $port = 8080
+    $envFile = Join-Path $env:ProgramData 'Kadai\kadai.env'
+    $line = Select-String -LiteralPath $envFile -Pattern '^PORT=(\d+)' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($line) { $port = [int]$line.Matches[0].Groups[1].Value }
+    $ips = @(Get-NetIPConfiguration -ErrorAction SilentlyContinue |
+        Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
+        ForEach-Object { $_.IPv4Address.IPAddress })
+    if ($ips.Count -eq 0) {
+      $ips = @(Get-NetIPAddress -AddressFamily IPv4 -AddressState Preferred -ErrorAction SilentlyContinue |
+          Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
+          ForEach-Object { $_.IPAddress })
+    }
+    $lines = @("URL=http://$($env:COMPUTERNAME.ToLowerInvariant()):$port")
+    foreach ($ip in ($ips | Select-Object -Unique)) { $lines += "URL=http://${ip}:$port" }
+    [IO.File]::WriteAllLines($Path, [string[]]$lines)
+  } catch {
+    Write-Warning "no address summary: $($_.Exception.Message)"
+  }
+}
+
 $code = 1
 $transcript = $false
 try {
@@ -56,7 +86,12 @@ try {
   } else {
     # Install: new configuration. Reinstall: existing kadai.env (port, secrets) after an
     # uninstall that kept the data, or to repair the application files and the service.
-    if ($Mode -eq 'Reinstall') { $arguments['Reinstall'] = $true } else { $arguments['Port'] = $Port }
+    if ($Mode -eq 'Reinstall') {
+      $arguments['Reinstall'] = $true
+    } else {
+      $arguments['Port'] = $Port
+      if ($Modules) { $arguments['Modules'] = $Modules }
+    }
     if ($PostgresInstaller) { $arguments['PostgresInstaller'] = $PostgresInstaller }
     if ($WinSWExe) { $arguments['WinSWExe'] = $WinSWExe }
     if ($SetNetworkPrivate) { $arguments['SetNetworkPrivate'] = $true }
@@ -75,6 +110,7 @@ try {
 
   & (Join-Path $PSScriptRoot 'install.ps1') @arguments
   $code = 0
+  if ($SummaryFile) { Write-Summary $SummaryFile }
   Write-Host '[kadai] KadaiSetup: finished'
 } catch {
   # Stop-WithError messages already start with "[kadai] ERROR:"; KadaiSetup.exe shows the

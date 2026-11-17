@@ -10,6 +10,7 @@
 import { z } from 'zod'
 import type { BusinessType } from './enums'
 import { GST_RATES_BP } from './gst'
+import { AppModuleSchema } from './modules'
 import { ScaleBarcodeConfigSchema } from './scale'
 
 export const PrintFormatSchema = z.enum(['thermal_80', 'thermal_58', 'a4'])
@@ -115,6 +116,18 @@ export const CatalogSettingsSchema = z.object({
   variant_axes: z.array(z.string().trim().min(1).max(30)).max(4).default([]),
 })
 
+/**
+ * Screens shown in the menu (modules.ts). `hidden` lists the modules this business switched
+ * off; empty (the default) shows everything the plan allows.
+ */
+export const ModuleSettingsSchema = z.object({
+  hidden: z
+    .array(AppModuleSchema)
+    .max(20)
+    .refine((list) => new Set(list).size === list.length, 'Each module may be listed once')
+    .default([]),
+})
+
 export const SETTINGS_SECTIONS = {
   invoice: InvoiceSettingsSchema,
   inventory: InventorySettingsSchema,
@@ -125,6 +138,7 @@ export const SETTINGS_SECTIONS = {
   notifications: NotificationSettingsSchema,
   payments: PaymentSettingsSchema,
   catalog: CatalogSettingsSchema,
+  modules: ModuleSettingsSchema,
 } as const
 export type SettingsSection = keyof typeof SETTINGS_SECTIONS
 
@@ -138,6 +152,7 @@ export const TenantSettingsSchema = z.object({
   notifications: NotificationSettingsSchema.prefault({}),
   payments: PaymentSettingsSchema.prefault({}),
   catalog: CatalogSettingsSchema.prefault({}),
+  modules: ModuleSettingsSchema.prefault({}),
 })
 export type TenantSettings = z.output<typeof TenantSettingsSchema>
 export type TenantSettingsInput = z.input<typeof TenantSettingsSchema>

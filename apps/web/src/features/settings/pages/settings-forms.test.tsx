@@ -155,3 +155,47 @@ describe('loyalty & credit', () => {
     expect(calls[0]!.body).toEqual({ loyalty: { points_per_100_rupees: 2 } })
   })
 })
+
+describe('screens (modules)', () => {
+  it('switches modules off and on, with presets, and saves the hidden list', async () => {
+    const user = userEvent.setup()
+    const calls = serveSettings(
+      mergeSettings(DEFAULT_SETTINGS, { modules: { hidden: ['labels'] } }),
+    )
+    await signIn()
+    renderApp('/settings/modules')
+    const stock = await screen.findByRole('switch', { name: 'Stock' })
+    expect(stock).toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Barcode labels' })).not.toBeChecked()
+    expect(screen.getAllByText('Always on').length).toBeGreaterThan(0)
+
+    await user.click(screen.getByRole('switch', { name: 'Accounts & expenses' }))
+    await user.click(screen.getByRole('switch', { name: 'Barcode labels' }))
+    await user.click(screen.getByRole('button', { name: /Save changes/ }))
+    await waitFor(() => expect(calls).toHaveLength(1))
+    expect(calls[0]!.body).toEqual({ modules: { hidden: ['accounts'] } })
+    expect(SettingsPatchSchema.safeParse(calls[0]!.body).success).toBe(true)
+    expect(await screen.findByText('Screens updated')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Billing only' }))
+    expect(screen.getByRole('switch', { name: 'Stock' })).not.toBeChecked()
+    await user.click(screen.getByRole('button', { name: /Save changes/ }))
+    await waitFor(() => expect(calls).toHaveLength(2))
+    expect(calls[1]!.body).toEqual({
+      modules: {
+        hidden: [
+          'inventory',
+          'purchases',
+          'customers',
+          'payments',
+          'accounts',
+          'reports',
+          'estimates',
+          'promotions',
+          'labels',
+          'notifications',
+        ],
+      },
+    })
+  })
+})

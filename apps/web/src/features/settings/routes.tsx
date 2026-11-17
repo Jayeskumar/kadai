@@ -44,6 +44,11 @@ export const routes: FeatureRoutes = {
           lazy: page(() => import('./pages/RolesPage')),
         },
         {
+          path: 'modules',
+          handle: { title: 'settings:pages.modules', permission: 'settings.manage', parent },
+          lazy: page(() => import('./pages/ModulesSettingsPage')),
+        },
+        {
           path: 'invoice',
           handle: { title: 'nav:titles.settings_invoice', permission: 'settings.manage', parent },
           lazy: page(() => import('./pages/InvoiceSettingsPage')),

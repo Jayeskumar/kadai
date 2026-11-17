@@ -1,9 +1,10 @@
 /** 404 / 403 / upgrade / route-error pages. */
-import { Compass, Lock, ServerCrash, Sparkles } from 'lucide-react'
+import { Compass, EyeOff, Lock, ServerCrash, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, isRouteErrorResponse, useRouteError } from 'react-router'
 import type { Feature } from '@kadai/shared/features'
 import { FEATURE_LABELS } from '@kadai/shared/features'
+import { APP_MODULE_INFO, type AppModule } from '@kadai/shared/modules'
 import { Button, EmptyState, ErrorFallback } from '@/components/ui'
 import { getLanguage } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
@@ -71,6 +72,34 @@ export function UpgradePage({ feature }: { feature: Feature }) {
           {mode === 'cloud' && canManageBilling ? (
             <Button asChild variant="accent">
               <Link to="/settings/billing">{t('pages.upgrade_cta')}</Link>
+            </Button>
+          ) : null}
+          <HomeButton />
+        </>
+      }
+      className="min-h-[60vh]"
+    />
+  )
+}
+
+/** A screen of a module the business switched off in Settings -> Screens. */
+export function ModuleHiddenPage({ module }: { module: AppModule }) {
+  const { t } = useTranslation('errors')
+  const canManage = useAuth((s) => s.permissions.has('settings.manage'))
+  const label = APP_MODULE_INFO[module].label[getLanguage()]
+  return (
+    <EmptyState
+      icon={<EyeOff />}
+      title={t('pages.module_hidden_title', { module: label })}
+      description={t(
+        canManage ? 'pages.module_hidden_description' : 'pages.module_hidden_ask_owner',
+        { module: label },
+      )}
+      action={
+        <>
+          {canManage ? (
+            <Button asChild variant="accent">
+              <Link to="/settings/modules">{t('pages.module_hidden_cta')}</Link>
             </Button>
           ) : null}
           <HomeButton />

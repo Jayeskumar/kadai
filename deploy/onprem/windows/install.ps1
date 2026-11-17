@@ -17,6 +17,7 @@
              reuses kadai.env, the database and the data folder; PostgreSQL must be installed)
   Remove:    .\install.ps1 -Uninstall         (keeps PostgreSQL, the database and the data folder)
   Offline:   pass -NodeZip, -PostgresInstaller and -WinSWExe with local copies of the downloads.
+  Screens:   -Modules inventory,customers,reports   (only these optional screens; "all" = every one)
 
 .EXAMPLE
   .\install.ps1 -Port 8080 -SetNetworkPrivate -BackupTask
@@ -28,6 +29,9 @@ param(
   [string]$DataRoot = (Join-Path $env:ProgramData 'Kadai'),
   [ValidateRange(1, 65535)][int]$Port = 8080,
   [string]$PublicUrl,
+  # Screens to show (fresh install only; comma-separated module ids, "all" or "none"). Written to
+  # kadai.env as KADAI_MODULES; the first-run setup wizard applies it, then Settings > Screens.
+  [ValidatePattern('^(all|none|[a-z_]+(,[a-z_]+)*)$')][string]$Modules,
   [ValidateRange(20, 99)][int]$NodeMajor = 22,
   [ValidatePattern('^16\.\d+-\d+$')][string]$PostgresVersion = '16.15-1',
   [string]$PostgresInstaller,
@@ -526,6 +530,7 @@ Write-Utf8File -Path $EnvFile -Lines @(
   'KADAI_BACKUP_RETENTION_DAYS=30',
   'KADAI_BACKUP_KEEP_MIN=7'
 )
+if ($Modules) { Set-EnvValue $EnvFile 'KADAI_MODULES' $Modules }
 Set-FolderPermission
 Copy-KadaiScript
 Install-KadaiService $nodeExe

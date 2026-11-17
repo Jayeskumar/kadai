@@ -8,7 +8,13 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
-import { isValidGstin, isValidStateCode, normalizeGstin } from '@kadai/shared'
+import {
+  type AppModule,
+  isValidGstin,
+  isValidStateCode,
+  normalizeGstin,
+  parseEnabledModules,
+} from '@kadai/shared'
 
 export type DeploymentMode = 'cloud' | 'onprem'
 export type NodeEnv = 'development' | 'test' | 'production'
@@ -109,6 +115,14 @@ export interface Config {
    * installer), so another PC on the LAN cannot claim a fresh installation first.
    */
   setupToken: string | null
+  /**
+   * On-prem first-run setup: modules (screens) to hide for the new business, from
+   * KADAI_MODULES = the modules to SHOW (written by the Windows installer). Empty = show all.
+   * Later changes are made in Settings -> Business -> Screens.
+   */
+  initialHiddenModules: readonly AppModule[]
+  /** KADAI_MODULES entries that are not module names (logged at boot, otherwise ignored). */
+  unknownModules: readonly string[]
 
   rateLimit: {
     /** Requests per minute per user (or IP for anonymous requests) on /api, /public, /webhooks. */
@@ -295,6 +309,7 @@ const EnvSchema = z.object({
   KADAI_EMBEDDED_WORKER: envBool(undefined),
   KADAI_HEALTH_REQUIRE_WORKER: envBool(undefined),
   KADAI_LICENSE_PUBLIC_KEY: optionalString,
+  KADAI_MODULES: optionalString,
   KADAI_SETUP_TOKEN: optionalString.pipe(
     z.string().min(8, 'must be at least 8 characters').max(200).optional(),
   ),
@@ -463,6 +478,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const isProduction = e.NODE_ENV === 'production'
   const mode = e.KADAI_MODE
   const issues: string[] = []
+  const modules = parseEnabledModules(e.KADAI_MODULES)
 
   // Production guards: refuse to boot with development secrets or test-only features.
   if (isProduction) {
@@ -576,6 +592,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     healthRequireWorker: e.KADAI_HEALTH_REQUIRE_WORKER ?? isProduction,
     licensePublicKey: e.KADAI_LICENSE_PUBLIC_KEY ?? null,
     setupToken: e.KADAI_SETUP_TOKEN ?? null,
+    initialHiddenModules: Object.freeze(modules.hidden),
+    unknownModules: Object.freeze(modules.unknown),
     rateLimit: { globalMax: e.RATE_LIMIT_GLOBAL_MAX },
     sms: {
       provider: e.SMS_PROVIDER,
@@ -649,6 +667,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 /** Warnings worth logging at boot (not fatal). */
 export function configWarnings(config: Config): string[] {
   const warnings: string[] = []
+  if (config.unknownModules.length > 0) {
+    warnings.push(`KADAI_MODULES: unknown module(s) ignored: ${config.unknownModules.join(', ')}`)
+  }
   if (config.database.systemUrlIsDefault) {
     warnings.push(
       'DATABASE_SYSTEM_URL is not set: the runtime URL is used for the system pool too (development only)',

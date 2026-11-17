@@ -21,7 +21,11 @@
     "crash_description": "Your data is safe. Try again, or reload the page if the problem continues.",
     "technical_details": "Technical details",
     "no_business_title": "No business linked to your account",
-    "no_business_description": "Ask the shop owner to add you as a user, or create a new shop."
+    "no_business_description": "Ask the shop owner to add you as a user, or create a new shop.",
+    "module_hidden_title": "{{module}} is turned off",
+    "module_hidden_description": "This business has switched off {{module}}, so its screens are hidden. Turn it back on in Settings → Screens.",
+    "module_hidden_ask_owner": "This business has switched off {{module}}. Ask the owner to turn it on in Settings → Screens.",
+    "module_hidden_cta": "Choose screens"
   },
   "validation": {
     "required": "This field is required",

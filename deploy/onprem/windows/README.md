@@ -12,26 +12,50 @@ Give the shop **`KadaiSetup-<version>-x64.exe`** (an asset of every GitHub relea
 carries the Kadai server, Node.js 22, PostgreSQL 16 and WinSW, so no internet connection is
 needed.
 
-1. Double-click `KadaiSetup-<version>-x64.exe` (Windows asks for administrator rights).
-2. Choose the options (shop-network access, daily backup, desktop shortcut) and the port
-   (8080).
-3. Setup installs everything and waits until Kadai answers. Then **Open Kadai now** shows the
-   setup wizard: shop name, GSTIN, owner login. Upload the licence in Settings → System.
+![KadaiSetup welcome banner](installer/assets/preview-wizard.png)
 
-The same `.exe` also **upgrades** an existing installation (pre-upgrade backup, switch, health
-check, previous version kept for `install.ps1 -Rollback`) and **reinstalls** after an uninstall
-(it reuses `C:\ProgramData\Kadai\kadai.env` and the database). **Uninstall** from Settings →
-Apps → Kadai Server: the service, firewall rule, shortcuts and program files go; data, backups
-and the PostgreSQL database are kept.
+1. Double-click `KadaiSetup-<version>-x64.exe` (Windows asks for administrator rights) and
+   pick **English** or **தமிழ்**.
+2. **Shop network and backups**: let counter PCs connect (marks the network Private), daily
+   backup at 22:45, desktop shortcut.
+3. **Choose the screens you need**: tick only the parts of Kadai the shop uses (Stock,
+   Purchases & suppliers, Customers & khata, Payments & UPI, Accounts, Reports, Estimates,
+   Offers, Barcode labels, WhatsApp & SMS), or use a preset (**Everything**, **Simple shop**,
+   **Billing only**). Billing, products and settings are always on. The choice is written to
+   `kadai.env` as `KADAI_MODULES` and applied when the owner completes the first-run wizard;
+   afterwards it is changed in Kadai under **Settings → Screens**. Hiding a screen only removes
+   it from the menu: data and server rules are unchanged (the plan still decides what is
+   allowed).
+4. **Network port** (8080). Setup checks right away that no other program uses it.
+5. Setup installs everything with a step-by-step progress page (checking files, Node.js, the
+   database, the service, starting Kadai) and waits until Kadai answers. The finish page lists
+   the addresses for counter PCs and phones (PC name and LAN IP, e.g. `http://192.168.1.10:8080`);
+   **Open Kadai now** opens Kadai in its own window (Microsoft Edge app mode, as the shop user,
+   not as administrator). Then the setup wizard: shop name, GSTIN, owner login; upload the
+   licence in Settings → System.
+
+The same `.exe` also **upgrades** an older installation (pre-upgrade backup, switch, health
+check, previous version kept for `install.ps1 -Rollback`), **repairs** the same version, and
+**reinstalls** after an uninstall (it reuses `C:\ProgramData\Kadai\kadai.env` and the
+database). It **refuses to downgrade** a newer installation (migrations are forward-only).
+**Uninstall** from Settings → Apps → Kadai Server: the service, firewall rule, shortcuts and
+program files go; data, backups and the PostgreSQL database are kept. If something fails, Setup
+shows the reason and offers to open the log in Notepad; running Setup again continues where it
+stopped.
 
 Silent install for IT staff:
 
 ```powershell
 KadaiSetup-<version>-x64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG=C:\kadai-setup.log `
-  /PORT=8080 /TASKS="network,backup,desktopicon"     # /PGPASSWORD=... if PostgreSQL 16 already exists
+  /PORT=8080 /TASKS="network,backup,desktopicon" /MODULES=inventory,customers,reports /LANG=tamil
+# PostgreSQL 16 already on the PC: /PGPASSWORDFILE=C:\pg.txt (preferred; /PGPASSWORD=... is
+# written into the /LOG file by Inno Setup)
 ```
 
-Exit code 0 means installed and healthy; 7 means the installation failed (details in
+`/MODULES` takes `all` (default), `none` (billing only) or a comma list of `inventory`,
+`purchases`, `customers`, `payments`, `accounts`, `reports`, `estimates`, `promotions`,
+`labels`, `notifications`. Exit code 0 means installed and healthy; 1 means refused (a newer
+version is installed); 7 means the installation failed (details in
 `C:\ProgramData\Kadai\logs\install-*.log`).
 
 **Building the .exe** (Windows, from the repository root, after `pnpm build` and
@@ -47,12 +71,14 @@ WinSW pinned SHA-256) and writes `dist\release\KadaiSetup-1.4.0-x64.exe`. **Sign
 shipping**: with a code-signing certificate in `KADAI_SIGN_PFX_BASE64` / `KADAI_SIGN_PFX_PASS`
 (environment, or repository secrets for the workflow) setup and uninstaller are signed;
 unsigned, Windows SmartScreen warns the customer. `deploy/tests/windows/installer-e2e.ps1`
-tests install → upgrade → uninstall → reinstall on a throw-away Windows machine (CI does this
-on every build).
+tests install (with chosen screens) → busy port refused → repair → downgrade refused →
+uninstall → reinstall on a throw-away Windows machine (CI does this on every build).
 
-Files: `installer/kadai-setup.iss` (Inno Setup script), `installer/run-install.ps1`
-(unattended wrapper around `install.ps1` with log and exit code), `installer/README.txt`
-(guide installed for the shop).
+Files: `installer/kadai-setup.iss` (Inno Setup script), `installer/lang/*.isl` (English and
+Tamil texts, UTF-8 with BOM), `installer/assets/` (wizard images and icon, rendered from the
+Kadai logo by `render-assets.mjs`), `installer/run-install.ps1` (unattended wrapper around
+`install.ps1` with log, exit code and address summary), `installer/README.txt` (guide installed
+for the shop).
 
 ## Install with PowerShell (manual / scripted)
 

@@ -65,6 +65,8 @@ export function makeMe(
     businessType?: MeResponse['tenant']['business_type']
     tenantId?: string
     device?: MeResponse['device']
+    /** Modules switched off in Settings -> Screens. */
+    hiddenModules?: MeResponse['settings']['modules']['hidden']
   } = {},
 ): MeResponse {
   return {
@@ -111,7 +113,9 @@ export function makeMe(
       source: 'plan',
       valid_until: null,
     },
-    settings: DEFAULT_SETTINGS,
+    settings: options.hiddenModules
+      ? { ...DEFAULT_SETTINGS, modules: { hidden: options.hiddenModules } }
+      : DEFAULT_SETTINGS,
     stores: [
       {
         id: IDS.store,

@@ -10,6 +10,7 @@ import {
   Gift,
   History,
   KeyRound,
+  LayoutGrid,
   ListOrdered,
   MessageSquare,
   MonitorSmartphone,
@@ -89,6 +90,15 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     description: 'settings:nav.roles_hint',
     icon: ShieldCheck,
     permission: 'users.manage',
+  },
+  {
+    id: 'modules',
+    to: '/settings/modules',
+    group: 'business',
+    label: 'settings:nav.modules',
+    description: 'settings:nav.modules_hint',
+    icon: LayoutGrid,
+    permission: 'settings.manage',
   },
   {
     id: 'invoice',

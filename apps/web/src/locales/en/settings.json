@@ -37,13 +37,16 @@
     "system": "System",
     "system_hint": "Licence, backups and updates",
     "audit_log": "Audit log",
-    "audit_log_hint": "Who changed what, and when"
+    "audit_log_hint": "Who changed what, and when",
+    "modules": "Screens",
+    "modules_hint": "Show only the parts of Kadai your shop uses"
   },
   "pages": {
     "pos": "POS & stock settings",
     "pharmacy": "Pharmacy settings",
     "loyalty": "Loyalty & credit",
-    "number_series": "Number series"
+    "number_series": "Number series",
+    "modules": "Screens"
   },
   "home": {
     "description": "Set Kadai up the way your shop works.",
@@ -816,5 +819,21 @@
     "thermal_80": "80 mm",
     "thermal_58": "58 mm",
     "a4": "A4"
+  },
+  "modules": {
+    "description": "Choose which parts of Kadai appear in the menu. Switch off what your shop does not use, so the team sees only the screens it needs.",
+    "saved": "Screens updated",
+    "section_core": "Always on",
+    "section_core_hint": "Billing, products and settings are the heart of Kadai.",
+    "core_billing": "Billing (POS, bills, returns)",
+    "core_products": "Products & prices",
+    "core_settings": "Settings",
+    "always_on": "Always on",
+    "section_optional": "Optional screens",
+    "section_optional_hint": "Switched-off screens disappear from the menu for everyone in this business.",
+    "preset_all": "Show everything",
+    "preset_simple": "Simple shop",
+    "preset_billing_only": "Billing only",
+    "note": "Switching a screen off only hides it: your data is kept and keeps working underneath (bills still update stock). Your plan decides which features are available."
   }
 }

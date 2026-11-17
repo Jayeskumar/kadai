@@ -52,7 +52,7 @@ export async function setupStatus(
  */
 export async function runSetup(
   systemDb: Kysely<DB>,
-  config: Pick<Config, 'setupToken'>,
+  config: Pick<Config, 'setupToken'> & Partial<Pick<Config, 'initialHiddenModules'>>,
   version: string,
   meta: RequestMeta,
   body: SetupRequest,
@@ -85,6 +85,10 @@ export async function runSetup(
       },
       store_name: body.store_name ?? null,
       mode: 'onprem',
+      // Screens chosen in the Windows installer (KADAI_MODULES); changeable in Settings.
+      ...(config.initialHiddenModules && config.initialHiddenModules.length > 0
+        ? { settings: { modules: { hidden: [...config.initialHiddenModules] } } }
+        : {}),
       meta: { ip: meta.ip, userAgent: meta.userAgent, requestId: meta.requestId },
     })
     await tx

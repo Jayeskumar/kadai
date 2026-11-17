@@ -16,6 +16,7 @@ import { Button, EmptyState, IconButton, RetryButton } from '@/components/ui'
 import { useCan, useFeature, useMe } from '@/lib/auth'
 import { describeError } from '@/lib/errors'
 import { formatDate, formatTime } from '@/lib/format'
+import { useModuleShown } from '@/lib/permissions'
 import { useRouteQuery } from '@/lib/query'
 import { useReportCalendar } from '@/features/reports/lib/calendar'
 import { nameOf, useLang } from '@/features/reports/lib/labels'
@@ -38,9 +39,11 @@ export default function DashboardPage() {
   const me = useMe()
   const cal = useReportCalendar()
   const canReports = useCan('reports.read')
-  const canPurchases = useCan('purchases.read')
+  const purchasesShown = useModuleShown('purchases')
+  const reportsShown = useModuleShown('reports')
+  const canPurchases = useCan('purchases.read') && purchasesShown
   const hasPurchases = useFeature('purchases')
-  const basicReports = useFeature('reports_basic')
+  const basicReports = useFeature('reports_basic') && reportsShown
   const [store, setStore] = useState<string | null>(() => initialDashboardStore(me))
   const [date, setDate] = useState(cal.today)
   const isToday = date === cal.today
@@ -175,9 +178,7 @@ export default function DashboardPage() {
               canOpenReport={basicReports}
             />
           </div>
-          {canPurchases && hasPurchases ? (
-            <StockSenseCard storeId={effectiveStoreId} />
-          ) : null}
+          {canPurchases && hasPurchases ? <StockSenseCard storeId={effectiveStoreId} /> : null}
         </>
       )}
     </div>

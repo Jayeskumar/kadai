@@ -5,14 +5,21 @@
  *  - RequireTenant:  signed in to a business (GET /me loaded) → else /select-business, or
  *                    /platform for a platform admin without a business.
  *  - GuestOnly:      signed-out pages; signed-in users go to `next` or home.
- *  - RouteAccess:    enforces the matched routes' handle rules: permission → 403 page,
+ *  - RouteAccess:    screens of a module the business switched off → "turned off" page;
+ *                    then the matched routes' handle rules: permission → 403 page,
  *                    feature → upgrade page, mode/business type → not available.
  */
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router'
 import { useAuth } from '@/lib/auth'
-import { checkAccess } from '@/lib/permissions'
+import { checkAccess, hiddenModuleOf } from '@/lib/permissions'
 import { SplashScreen } from './pages/SplashScreen'
-import { ForbiddenPage, ModeUnavailablePage, NotFoundPage, UpgradePage } from './pages/StatusPages'
+import {
+  ForbiddenPage,
+  ModeUnavailablePage,
+  ModuleHiddenPage,
+  NotFoundPage,
+  UpgradePage,
+} from './pages/StatusPages'
 import { useRouteHandles } from './route-handles'
 import { safeNext } from './safe-next'
 
@@ -63,6 +70,9 @@ export function GuestOnly() {
 export function RouteAccess() {
   const handles = useRouteHandles()
   const state = useAuth((s) => s)
+  const location = useLocation()
+  const hidden = hiddenModuleOf(location.pathname, state)
+  if (hidden) return <ModuleHiddenPage module={hidden} />
   for (const { handle } of handles) {
     const result = checkAccess(handle, state)
     if (result === 'forbidden') return <ForbiddenPage />

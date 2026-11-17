@@ -11,6 +11,7 @@
 import type { ReactNode } from 'react'
 import type { BusinessType, DeploymentMode } from '@kadai/shared/enums'
 import type { Feature } from '@kadai/shared/features'
+import { hiddenModuleForPath, type AppModule } from '@kadai/shared/modules'
 import { hasPermission, type Permission } from '@kadai/shared/permissions'
 import { useAuth, type AuthState } from './auth'
 
@@ -37,6 +38,25 @@ export function checkAccess(rule: AccessRule, s: AuthState): AccessResult {
   if (rule.permission && !hasPermission(s.permissions, rule.permission)) return 'forbidden'
   if (rule.feature && !s.features.has(rule.feature)) return 'feature'
   return 'allowed'
+}
+
+/** Modules (screens) this business switched off in Settings -> Screens (modules.ts). */
+export function hiddenModules(s: Pick<AuthState, 'me'>): readonly AppModule[] {
+  return s.me?.settings.modules?.hidden ?? []
+}
+
+/**
+ * The switched-off module that owns `path`, or null. Visibility only: the plan and permissions
+ * are checked by {@link checkAccess}.
+ */
+export function hiddenModuleOf(path: string, s: Pick<AuthState, 'me'>): AppModule | null {
+  const hidden = hiddenModules(s)
+  return hidden.length === 0 ? null : hiddenModuleForPath(path, hidden)
+}
+
+/** False when the business switched `module` off in Settings -> Screens. */
+export function useModuleShown(module: AppModule): boolean {
+  return useAuth((s) => !hiddenModules(s).includes(module))
 }
 
 /** React hook form of {@link checkAccess}. */
