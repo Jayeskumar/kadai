@@ -152,7 +152,7 @@ function Get-NavButtons([IntPtr]$Window) {
 
 # Next (also "Install" and "Finish"): left of Cancel, or the only button left on the finish page.
 function Get-NextButton([IntPtr]$Window) {
-  $nav = Get-NavButtons $Window
+  $nav = @(Get-NavButtons $Window)
   if ($nav.Count -eq 0) { return $null }
   $next = if ($nav.Count -ge 2) { $nav[$nav.Count - 2] } else { $nav[0] }
   if (-not [KadaiTourWin]::IsWindowEnabled($next.Handle)) { return $null }
@@ -235,7 +235,7 @@ try {
       Write-Controls $wizard
       throw "[wizard-tour] no enabled Next button on page $page"
     }
-    Write-Step "page ${page}: buttons $((Get-NavButtons $wizard | ForEach-Object { $_.Text }) -join ' | ')"
+    Write-Step "page ${page}: buttons $((@(Get-NavButtons $wizard) | ForEach-Object { $_.Text }) -join ' | ')"
     if ($InstallNames -contains $next.Text) {
       Save-Shot $wizard 'ready' | Out-Null
       break
@@ -268,16 +268,16 @@ try {
   [KadaiTourWin]::Click($next.Handle)
   $started = Get-Date
   $captureAt = @(6, 20, 45, 75, 110, 160, 220)
-  $next = 0
+  $shotIndex = 0
   while ($true) {
     Start-Sleep -Seconds 2
     $elapsed = ((Get-Date) - $started).TotalSeconds
     if (Close-MessageBox 'failure') { throw '[wizard-tour] Setup reported a failure (see the picture and the logs)' }
     $done = Get-NextButton $wizard
-    if ($done -and ($FinishNames -contains $done.Text -or (Get-NavButtons $wizard).Count -eq 1)) { break }
-    if ($next -lt $captureAt.Count -and $elapsed -ge $captureAt[$next]) {
+    if ($done -and ($FinishNames -contains $done.Text -or @(Get-NavButtons $wizard).Count -eq 1)) { break }
+    if ($shotIndex -lt $captureAt.Count -and $elapsed -ge $captureAt[$shotIndex]) {
       Save-Shot $wizard ('progress-{0:d3}s' -f [int]$elapsed) | Out-Null
-      $next++
+      $shotIndex++
     }
     if ($elapsed -gt $InstallTimeoutSeconds) { throw '[wizard-tour] the installation did not finish in time' }
   }

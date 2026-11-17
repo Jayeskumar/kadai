@@ -18,7 +18,7 @@ TaskBackup=Back up the database every day at 22:45
 TaskDesktop=Put a "Kadai" shortcut on the desktop
 
 ModulesTitle=Choose the screens you need
-ModulesSubtitle=Show only what your shop uses. You can change this any time in Kadai: Settings > Screens.
+ModulesSubtitle=Show only what your shop uses. Change it any time in Kadai: Settings > Screens.
 ModulesAlwaysOn=Always on: Billing (POS, bills, returns), Products & prices, Settings
 ModulesHint=Hidden screens keep working underneath (bills still update stock); they are only left out of the menu.
 ModulesPresetAll=Everything

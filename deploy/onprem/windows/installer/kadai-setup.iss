@@ -70,6 +70,8 @@ DefaultDirName={autopf}\Kadai
 ; install.ps1 manages <InstallDir>\{app,node,service,scripts}; keep one fixed, supported place.
 DisableDirPage=yes
 DisableProgramGroupPage=yes
+; Inno Setup 6 hides the welcome page by default; ours carries the banner and the overview.
+DisableWelcomePage=no
 UsePreviousAppDir=yes
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
@@ -428,8 +430,9 @@ begin
   AlwaysOn.AutoSize := False;
   AlwaysOn.WordWrap := True;
   AlwaysOn.Width := ModulesPage.SurfaceWidth;
-  AlwaysOn.Height := ScaleY(30);
+  AlwaysOn.Height := ScaleY(34);
   AlwaysOn.Font.Style := [fsBold];
+  AlwaysOn.ShowAccelChar := False;   { "Products & prices": & is text, not a shortcut mark }
   AlwaysOn.Caption := CustomMessage('ModulesAlwaysOn');
 
   ModuleDesc := TNewStaticText.Create(ModulesPage);
@@ -438,6 +441,7 @@ begin
   ModuleDesc.WordWrap := True;
   ModuleDesc.Width := ModulesPage.SurfaceWidth;
   ModuleDesc.Height := ScaleY(32);
+  ModuleDesc.ShowAccelChar := False;
   ModuleDesc.Top := ModulesPage.SurfaceHeight - ScaleY(25) - ScaleY(8) - ModuleDesc.Height;
   ModuleDesc.Caption := CustomMessage('ModulesHint');
 
