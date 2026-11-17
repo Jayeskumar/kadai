@@ -50,6 +50,9 @@ jobs:
     name: KadaiSetup.exe (build · install · upgrade · uninstall · reinstall)
     runs-on: windows-2022
     timeout-minutes: 90
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      artifact: ${{ inputs.artifact-name || format('KadaiSetup-{0}-x64', steps.v.outputs.version) }}
     defaults:
       run:
         shell: bash
@@ -144,3 +147,41 @@ jobs:
           path: dist/installer-e2e
           if-no-files-found: ignore
           retention-days: 14
+
+  # Visual review: clicks through the real wizard on a fresh Windows machine (language dialog,
+  # every page in English with the "port in use" message, then a full install in Tamil with the
+  # progress and finish pages) and uploads a PNG of each page. Not part of release builds.
+  wizard-tour:
+    name: Wizard screenshots (English · தமிழ்)
+    needs: installer
+    if: ${{ !inputs.artifact-name }}
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.installer.outputs.artifact }}
+          path: dist/installer
+      - name: English pages (stops at "Ready"; shows the port-in-use message)
+        shell: powershell
+        env:
+          VERSION: ${{ needs.installer.outputs.version }}
+        run: |
+          & deploy\tests\windows\wizard-tour.ps1 -Setup "dist\installer\KadaiSetup-$env:VERSION-x64.exe" -Lang ask -Prefix english -BusyPort 8080
+          if (-not $?) { exit 1 }
+      - name: Tamil pages with a full installation (progress and finish pages)
+        shell: powershell
+        env:
+          VERSION: ${{ needs.installer.outputs.version }}
+        run: |
+          & deploy\tests\windows\wizard-tour.ps1 -Setup "dist\installer\KadaiSetup-$env:VERSION-x64.exe" -Lang tamil -Install
+          if (-not $?) { exit 1 }
+      - name: Upload the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wizard-screenshots
+          path: dist/wizard-tour
+          if-no-files-found: warn
+          retention-days: 30
