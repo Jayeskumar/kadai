@@ -57,9 +57,9 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -135,7 +135,7 @@ jobs:
           if (-not $?) { exit 1 }
 
       - name: Upload the installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact-name || format('KadaiSetup-{0}-x64', steps.v.outputs.version) }}
           path: dist/installer/KadaiSetup-*.exe
@@ -145,7 +145,7 @@ jobs:
 
       - name: Upload installer test logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installer-e2e-logs-${{ github.run_attempt }}${{ inputs.artifact-name && '-release' || '' }}
           path: dist/installer-e2e
@@ -162,8 +162,8 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ needs.installer.outputs.artifact }}
           path: dist/installer
@@ -183,7 +183,7 @@ jobs:
           if (-not $?) { exit 1 }
       - name: Upload the screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wizard-screenshots
           path: dist/wizard-tour
