@@ -4,3 +4,5 @@
 *.ico binary
 *.bmp binary
 *.bundle binary
+*.mp4 binary
+*.jpg binary

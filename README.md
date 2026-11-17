@@ -3,6 +3,12 @@
 > **உங்கள் கடையின் பில்லிங், சரக்கு, கணக்குகள் — தமிழிலேயே**
 > Billing, stock and accounts for your shop — in Tamil.
 
+[![Watch the Kadai product intro (1:42)](docs/media/kadai-intro-poster.jpg)](docs/media/kadai-intro.mp4)
+
+▶ **[Watch the product intro video](docs/media/kadai-intro.mp4)** (1 min 42 s, 1080p): billing with UPI QR,
+dashboard, Tamil/English, stock, StockSense, khata, GST returns, screens and the Windows
+installer — recorded from the real app. **[Download KadaiSetup for Windows](https://github.com/Jayeskumar/kadai/releases)**.
+
 Kadai is a vertical retail ERP for Indian — first of all Tamil Nadu — small and mid-sized shops:
 general stores (மளிகை), supermarkets, textile and readymade stores, pharmacies, footwear,
 hardware, bakeries and stationery. It covers GST billing at the counter (keyboard-first, barcode
